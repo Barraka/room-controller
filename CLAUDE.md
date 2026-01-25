@@ -25,6 +25,7 @@ ESP32 Props ←──MQTT──→ Room Controller ←──WebSocket──→ G
 - **Runtime**: Node.js (ES Modules)
 - **MQTT Client**: mqtt.js (v5)
 - **WebSocket Server**: ws (v8)
+- **Admin Server**: Express (v4)
 - **Storage**: JSON file (session-history.json)
 - **Language**: JavaScript only - **NO TYPESCRIPT**
 
@@ -38,11 +39,14 @@ room-controller/
 ├── room-config.json          # Room and prop configuration
 ├── session-history.json      # Persisted session records (auto-created)
 ├── CLAUDE.md                 # This file
+├── admin/
+│   └── index.html            # Admin UI (static HTML/CSS/JS)
 └── src/
     ├── index.js              # Entry point, wires everything together
     ├── state-manager.js      # Central state for props and sessions
     ├── mqtt-client.js        # MQTT connection to props
-    └── websocket-server.js   # WebSocket server for dashboard
+    ├── websocket-server.js   # WebSocket server for dashboard
+    └── admin-server.js       # Express server for admin UI
 ```
 
 ---
@@ -97,6 +101,31 @@ Handles dashboard connections:
 
 Follows **WebSocket Contract v1.0** (see `../WEBSOCKET_CONTRACT_v1.md`)
 
+### 4. Admin Server (`src/admin-server.js`)
+
+Web-based configuration UI for managing props without editing JSON files.
+
+- **URL**: `http://localhost:3002` (configurable via `admin.port`)
+- **Features**:
+  - View/edit room info
+  - View/edit MQTT settings
+  - Add/edit/delete props and sensors
+  - Real-time prop status display (online/offline, solved)
+
+**REST API Endpoints:**
+```
+GET  /api/config              # Full configuration
+GET  /api/state               # Runtime state (props, session)
+PUT  /api/config/room         # Update room info
+GET  /api/config/props        # List all props
+POST /api/config/props        # Add new prop
+PUT  /api/config/props/:id    # Update prop
+DELETE /api/config/props/:id  # Delete prop
+PUT  /api/config/mqtt         # Update MQTT settings
+```
+
+**Note**: Config changes require a restart to take effect.
+
 ---
 
 ## Configuration
@@ -116,6 +145,9 @@ Follows **WebSocket Contract v1.0** (see `../WEBSOCKET_CONTRACT_v1.md`)
   },
   "websocket": {
     "port": 3001
+  },
+  "admin": {
+    "port": 3002
   },
   "props": [
     {

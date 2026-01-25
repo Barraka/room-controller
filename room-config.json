@@ -11,6 +11,9 @@
   "websocket": {
     "port": 3001
   },
+  "admin": {
+    "port": 3002
+  },
   "props": [
     {
       "propId": "magie_roueFortune",

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Controller - Admin</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: #00d4ff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2 {
+      color: #888;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 30px 0 15px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
+    }
+
+    .status-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: #2a5;
+      color: white;
+    }
+
+    .status-badge.offline {
+      background: #a52;
+    }
+
+    .card {
+      background: #252540;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: #888;
+      font-family: monospace;
+    }
+
+    .prop-status {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #555;
+    }
+
+    .dot.online { background: #2a5; }
+    .dot.solved { background: #fa0; }
+
+    .sensors-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .sensor-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: #333;
+      border-radius: 4px;
+      color: #aaa;
+    }
+
+    .sensor-tag.triggered {
+      background: #2a5;
+      color: white;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.8;
+    }
+
+    .btn-primary {
+      background: #00d4ff;
+      color: #000;
+    }
+
+    .btn-secondary {
+      background: #444;
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #a52;
+      color: #fff;
+    }
+
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+
+    input, select {
+      padding: 8px 12px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #00d4ff;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #252540;
+      border-radius: 12px;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h3 {
+      margin-bottom: 20px;
+      color: #00d4ff;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: #2a5;
+      color: white;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 200;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: #a52;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .info-label {
+      color: #888;
+    }
+
+    .info-value {
+      font-family: monospace;
+    }
+
+    .restart-warning {
+      background: #fa03;
+      color: #fa0;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .restart-warning.show {
+      display: flex;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <span>Room Controller</span>
+    <span class="status-badge" id="connectionStatus">Chargement...</span>
+  </h1>
+
+  <div class="restart-warning" id="restartWarning">
+    <span>Configuration modifiee. Redemarrez le Room Controller pour appliquer les changements.</span>
+    <button class="btn-secondary btn-small" onclick="location.reload()">Rafraichir</button>
+  </div>
+
+  <!-- Room Info -->
+  <h2>Salle</h2>
+  <div class="card">
+    <div class="info-row">
+      <span class="info-label">ID</span>
+      <span class="info-value" id="roomId">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Nom</span>
+      <span class="info-value" id="roomName">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Site</span>
+      <span class="info-value" id="roomSite">-</span>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary btn-small" onclick="openEditRoomModal()">Modifier</button>
+    </div>
+  </div>
+
+  <!-- MQTT Settings -->
+  <h2>MQTT</h2>
+  <div class="card">
+    <div class="info-row">
+      <span class="info-label">Broker</span>
+      <span class="info-value" id="mqttBroker">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Base Topic</span>
+      <span class="info-value" id="mqttBaseTopic">-</span>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary btn-small" onclick="openEditMqttModal()">Modifier</button>
+    </div>
+  </div>
+
+  <!-- Props -->
+  <h2>Props</h2>
+  <div id="propsList"></div>
+  <button class="btn-primary" onclick="openAddPropModal()" style="margin-top: 10px;">+ Ajouter un Prop</button>
+
+  <!-- Edit Room Modal -->
+  <div class="modal-overlay" id="editRoomModal">
+    <div class="modal">
+      <h3>Modifier la Salle</h3>
+      <form id="editRoomForm">
+        <div class="form-group">
+          <label>ID (identifiant unique)</label>
+          <input type="text" id="editRoomId" required>
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="editRoomName" required>
+        </div>
+        <div class="form-group">
+          <label>Site</label>
+          <input type="text" id="editRoomSite" value="default">
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('editRoomModal')">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit MQTT Modal -->
+  <div class="modal-overlay" id="editMqttModal">
+    <div class="modal">
+      <h3>Parametres MQTT</h3>
+      <form id="editMqttForm">
+        <div class="form-group">
+          <label>Broker URL</label>
+          <input type="text" id="editMqttBroker" placeholder="mqtt://localhost:1883" required>
+        </div>
+        <div class="form-group">
+          <label>Base Topic</label>
+          <input type="text" id="editMqttBaseTopic" placeholder="ey/default/magie" required>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('editMqttModal')">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add/Edit Prop Modal -->
+  <div class="modal-overlay" id="propModal">
+    <div class="modal">
+      <h3 id="propModalTitle">Ajouter un Prop</h3>
+      <form id="propForm">
+        <input type="hidden" id="propEditMode" value="add">
+        <input type="hidden" id="propOriginalId">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prop ID (unique)</label>
+            <input type="text" id="propId" placeholder="magie_puzzle1" required>
+          </div>
+          <div class="form-group">
+            <label>Ordre</label>
+            <input type="number" id="propOrder" value="1" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="propName" placeholder="Puzzle Magique" required>
+        </div>
+        <div class="form-group">
+          <label>Capteurs (JSON)</label>
+          <textarea id="propSensors" rows="4" style="width:100%; background:#1a1a2e; color:#fff; border:1px solid #444; border-radius:4px; padding:8px; font-family:monospace;">[
+  { "sensorId": "sensor1", "label": "Capteur 1" }
+]</textarea>
+          <div style="font-size:11px; color:#666; margin-top:4px;">
+            Format: [{ "sensorId": "xxx", "label": "Nom" }, ...]
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('propModal')">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let config = null;
+    let state = null;
+
+    // ─────────────────────────────────────────────────────────
+    // API Calls
+    // ─────────────────────────────────────────────────────────
+
+    async function fetchConfig() {
+      const res = await fetch('/api/config');
+      config = await res.json();
+      renderConfig();
+    }
+
+    async function fetchState() {
+      try {
+        const res = await fetch('/api/state');
+        state = await res.json();
+        document.getElementById('connectionStatus').textContent = 'Connecte';
+        document.getElementById('connectionStatus').classList.remove('offline');
+        renderProps();
+      } catch (err) {
+        document.getElementById('connectionStatus').textContent = 'Deconnecte';
+        document.getElementById('connectionStatus').classList.add('offline');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Rendering
+    // ─────────────────────────────────────────────────────────
+
+    function renderConfig() {
+      // Room info
+      document.getElementById('roomId').textContent = config.room.id;
+      document.getElementById('roomName').textContent = config.room.name;
+      document.getElementById('roomSite').textContent = config.room.site || 'default';
+
+      // MQTT
+      document.getElementById('mqttBroker').textContent = config.mqtt.broker;
+      document.getElementById('mqttBaseTopic').textContent = config.mqtt.baseTopic;
+
+      renderProps();
+    }
+
+    function renderProps() {
+      const container = document.getElementById('propsList');
+
+      if (!config.props || config.props.length === 0) {
+        container.innerHTML = '<div class="empty-state">Aucun prop configure</div>';
+        return;
+      }
+
+      container.innerHTML = config.props.map(prop => {
+        // Find runtime state for this prop
+        const runtimeProp = state?.props?.find(p => p.propId === prop.propId);
+        const isOnline = runtimeProp?.online || false;
+        const isSolved = runtimeProp?.solved || false;
+
+        const sensorsHtml = prop.sensors.map(s => {
+          const triggered = runtimeProp?.sensors?.find(rs => rs.sensorId === s.sensorId)?.triggered;
+          return `<span class="sensor-tag ${triggered ? 'triggered' : ''}">${s.label}</span>`;
+        }).join('');
+
+        return `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">${prop.name}</div>
+                <div class="card-subtitle">${prop.propId}</div>
+              </div>
+              <div class="prop-status">
+                <div class="dot ${isOnline ? 'online' : ''}" title="${isOnline ? 'En ligne' : 'Hors ligne'}"></div>
+                <div class="dot ${isSolved ? 'solved' : ''}" title="${isSolved ? 'Resolu' : 'Non resolu'}"></div>
+                <span style="font-size:12px;color:#666;">Ordre: ${prop.order}</span>
+              </div>
+            </div>
+            <div class="sensors-list">${sensorsHtml || '<span style="color:#666;font-size:12px;">Aucun capteur</span>'}</div>
+            <div class="actions">
+              <button class="btn-secondary btn-small" onclick="openEditPropModal('${prop.propId}')">Modifier</button>
+              <button class="btn-danger btn-small" onclick="deleteProp('${prop.propId}')">Supprimer</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Modals
+    // ─────────────────────────────────────────────────────────
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function openEditRoomModal() {
+      document.getElementById('editRoomId').value = config.room.id;
+      document.getElementById('editRoomName').value = config.room.name;
+      document.getElementById('editRoomSite').value = config.room.site || 'default';
+      openModal('editRoomModal');
+    }
+
+    function openEditMqttModal() {
+      document.getElementById('editMqttBroker').value = config.mqtt.broker;
+      document.getElementById('editMqttBaseTopic').value = config.mqtt.baseTopic;
+      openModal('editMqttModal');
+    }
+
+    function openAddPropModal() {
+      document.getElementById('propModalTitle').textContent = 'Ajouter un Prop';
+      document.getElementById('propEditMode').value = 'add';
+      document.getElementById('propOriginalId').value = '';
+      document.getElementById('propId').value = '';
+      document.getElementById('propId').disabled = false;
+      document.getElementById('propName').value = '';
+      document.getElementById('propOrder').value = config.props.length + 1;
+      document.getElementById('propSensors').value = '[\n  { "sensorId": "sensor1", "label": "Capteur 1" }\n]';
+      openModal('propModal');
+    }
+
+    function openEditPropModal(propId) {
+      const prop = config.props.find(p => p.propId === propId);
+      if (!prop) return;
+
+      document.getElementById('propModalTitle').textContent = 'Modifier le Prop';
+      document.getElementById('propEditMode').value = 'edit';
+      document.getElementById('propOriginalId').value = propId;
+      document.getElementById('propId').value = prop.propId;
+      document.getElementById('propId').disabled = true;
+      document.getElementById('propName').value = prop.name;
+      document.getElementById('propOrder').value = prop.order;
+      document.getElementById('propSensors').value = JSON.stringify(prop.sensors, null, 2);
+      openModal('propModal');
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Form Handlers
+    // ─────────────────────────────────────────────────────────
+
+    document.getElementById('editRoomForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch('/api/config/room', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: document.getElementById('editRoomId').value,
+            name: document.getElementById('editRoomName').value,
+            site: document.getElementById('editRoomSite').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Salle mise a jour');
+          closeModal('editRoomModal');
+          showRestartWarning();
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    });
+
+    document.getElementById('editMqttForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const res = await fetch('/api/config/mqtt', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            broker: document.getElementById('editMqttBroker').value,
+            baseTopic: document.getElementById('editMqttBaseTopic').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('MQTT mis a jour');
+          closeModal('editMqttModal');
+          showRestartWarning();
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    });
+
+    document.getElementById('propForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      let sensors;
+      try {
+        sensors = JSON.parse(document.getElementById('propSensors').value);
+      } catch (err) {
+        showToast('JSON invalide pour les capteurs', true);
+        return;
+      }
+
+      const mode = document.getElementById('propEditMode').value;
+      const propId = document.getElementById('propId').value;
+      const originalId = document.getElementById('propOriginalId').value;
+
+      const body = {
+        propId,
+        name: document.getElementById('propName').value,
+        order: parseInt(document.getElementById('propOrder').value, 10),
+        sensors
+      };
+
+      try {
+        let res;
+        if (mode === 'add') {
+          res = await fetch('/api/config/props', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+        } else {
+          res = await fetch(`/api/config/props/${originalId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(mode === 'add' ? 'Prop ajoute' : 'Prop mis a jour');
+          closeModal('propModal');
+          showRestartWarning();
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    });
+
+    async function deleteProp(propId) {
+      if (!confirm(`Supprimer le prop "${propId}" ?`)) return;
+
+      try {
+        const res = await fetch(`/api/config/props/${propId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Prop supprime');
+          showRestartWarning();
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Utilities
+    // ─────────────────────────────────────────────────────────
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.toggle('error', isError);
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function showRestartWarning() {
+      document.getElementById('restartWarning').classList.add('show');
+    }
+
+    // Close modals on backdrop click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // Init
+    // ─────────────────────────────────────────────────────────
+
+    fetchConfig();
+    fetchState();
+    setInterval(fetchState, 5000); // Poll state every 5s
+  </script>
+</body>
+</html>

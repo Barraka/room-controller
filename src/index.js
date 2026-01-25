@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { createMqttClient } from './mqtt-client.js';
 import { createWebSocketServer } from './websocket-server.js';
 import { createStateManager } from './state-manager.js';
+import { createAdminServer } from './admin-server.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,11 +31,16 @@ const mqttClient = createMqttClient(config, stateManager, wsServer);
 // Wire up MQTT client to WebSocket server (for sending commands)
 wsServer.setMqttClient(mqttClient);
 
+// Initialize Admin server
+const adminPort = config.admin?.port || 3002;
+const adminServer = createAdminServer(adminPort, stateManager);
+
 // Graceful shutdown
 const shutdown = () => {
   console.log('\n[Server] Shutting down...');
   mqttClient.end();
   wsServer.close();
+  adminServer.close();
   process.exit(0);
 };
 

@@ -17,6 +17,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "express": "^4.21.0",
     "mqtt": "^5.10.0",
     "ws": "^8.18.0"
   }
