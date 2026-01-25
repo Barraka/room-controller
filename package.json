@@ -1,0 +1,23 @@
+{
+  "name": "room-controller",
+  "version": "1.0.0",
+  "description": "Escape room controller - MQTT to WebSocket bridge and session manager",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "escape-room",
+    "mqtt",
+    "websocket",
+    "game-master"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "mqtt": "^5.10.0",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "room": {
+    "id": "magie",
+    "name": "Salle Magie",
+    "site": "default"
+  },
+  "mqtt": {
+    "broker": "mqtt://localhost:1883",
+    "baseTopic": "ey/default/magie"
+  },
+  "websocket": {
+    "port": 3001
+  },
+  "props": [
+    {
+      "propId": "magie_roueFortune",
+      "name": "Roue de la Fortune",
+      "order": 1,
+      "sensors": [
+        { "sensorId": "rfid", "label": "RFID" },
+        { "sensorId": "magnet", "label": "Aimant" }
+      ]
+    }
+  ]
+}
