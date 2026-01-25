@@ -17,8 +17,8 @@
       "name": "Roue de la Fortune",
       "order": 1,
       "sensors": [
-        { "sensorId": "rfid", "label": "RFID" },
-        { "sensorId": "magnet", "label": "Aimant" }
+        { "sensorId": "rfid1", "label": "RFID" },
+        { "sensorId": "magnet1", "label": "Aimant" }
       ]
     }
   ]
