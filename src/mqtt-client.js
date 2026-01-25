@@ -154,7 +154,7 @@ export function createMqttClient(config, stateManager, wsServer) {
       source: 'gm',
       timestamp: Date.now(),
       requestId: `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      params
+      ...params  // Flatten params at root level for ESP32 compatibility
     };
 
     client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
