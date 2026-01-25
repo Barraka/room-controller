@@ -271,6 +271,76 @@
       padding: 40px;
       color: #666;
     }
+
+    .sensor-editor {
+      background: #1a1a2e;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 8px;
+    }
+
+    .sensor-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .sensor-row:last-child {
+      border-bottom: none;
+    }
+
+    .sensor-row input {
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .sensor-row .btn-icon {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 4px;
+    }
+
+    .sensor-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      font-size: 11px;
+      color: #666;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #444;
+      margin-bottom: 4px;
+    }
+
+    .add-sensor-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      background: #333;
+      border: 1px dashed #555;
+      color: #888;
+      font-size: 12px;
+    }
+
+    .add-sensor-btn:hover {
+      background: #3a3a5a;
+      border-color: #00d4ff;
+      color: #00d4ff;
+    }
+
+    .no-sensors {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      padding: 15px;
+    }
   </style>
 </head>
 <body>
@@ -393,12 +463,15 @@
           <input type="text" id="propName" placeholder="Puzzle Magique" required>
         </div>
         <div class="form-group">
-          <label>Capteurs (JSON)</label>
-          <textarea id="propSensors" rows="4" style="width:100%; background:#1a1a2e; color:#fff; border:1px solid #444; border-radius:4px; padding:8px; font-family:monospace;">[
-  { "sensorId": "sensor1", "label": "Capteur 1" }
-]</textarea>
-          <div style="font-size:11px; color:#666; margin-top:4px;">
-            Format: [{ "sensorId": "xxx", "label": "Nom" }, ...]
+          <label>Capteurs</label>
+          <div class="sensor-editor">
+            <div class="sensor-header">
+              <span>ID Capteur</span>
+              <span>Label (affichage)</span>
+              <span></span>
+            </div>
+            <div id="sensorsList"></div>
+            <button type="button" class="add-sensor-btn" onclick="addSensorRow()">+ Ajouter un capteur</button>
           </div>
         </div>
         <div class="actions">
@@ -531,7 +604,9 @@
       document.getElementById('propId').disabled = false;
       document.getElementById('propName').value = '';
       document.getElementById('propOrder').value = config.props.length + 1;
-      document.getElementById('propSensors').value = '[\n  { "sensorId": "sensor1", "label": "Capteur 1" }\n]';
+
+      // Initialize with one empty sensor
+      renderSensorsList([{ sensorId: '', label: '' }]);
       openModal('propModal');
     }
 
@@ -546,8 +621,73 @@
       document.getElementById('propId').disabled = true;
       document.getElementById('propName').value = prop.name;
       document.getElementById('propOrder').value = prop.order;
-      document.getElementById('propSensors').value = JSON.stringify(prop.sensors, null, 2);
+
+      // Populate sensors list
+      renderSensorsList(prop.sensors.length > 0 ? prop.sensors : [{ sensorId: '', label: '' }]);
       openModal('propModal');
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Sensor Editor
+    // ─────────────────────────────────────────────────────────
+
+    function renderSensorsList(sensors) {
+      const container = document.getElementById('sensorsList');
+
+      if (!sensors || sensors.length === 0) {
+        container.innerHTML = '<div class="no-sensors">Aucun capteur</div>';
+        return;
+      }
+
+      container.innerHTML = sensors.map((sensor, index) => `
+        <div class="sensor-row" data-index="${index}">
+          <input type="text"
+                 class="sensor-id"
+                 value="${sensor.sensorId || ''}"
+                 placeholder="ex: rfid1, magnet1">
+          <input type="text"
+                 class="sensor-label"
+                 value="${sensor.label || ''}"
+                 placeholder="ex: RFID, Aimant">
+          <button type="button" class="btn-danger btn-icon" onclick="removeSensorRow(${index})" title="Supprimer">×</button>
+        </div>
+      `).join('');
+    }
+
+    function addSensorRow() {
+      const sensors = collectSensorsFromUI();
+      sensors.push({ sensorId: '', label: '' });
+      renderSensorsList(sensors);
+
+      // Focus the new sensor ID input
+      const rows = document.querySelectorAll('.sensor-row');
+      const lastRow = rows[rows.length - 1];
+      if (lastRow) {
+        lastRow.querySelector('.sensor-id').focus();
+      }
+    }
+
+    function removeSensorRow(index) {
+      const sensors = collectSensorsFromUI();
+      sensors.splice(index, 1);
+      renderSensorsList(sensors.length > 0 ? sensors : []);
+    }
+
+    function collectSensorsFromUI() {
+      const rows = document.querySelectorAll('.sensor-row');
+      const sensors = [];
+
+      rows.forEach(row => {
+        const sensorId = row.querySelector('.sensor-id').value.trim();
+        const label = row.querySelector('.sensor-label').value.trim();
+
+        // Only include if at least sensorId is filled
+        if (sensorId) {
+          sensors.push({ sensorId, label: label || sensorId });
+        }
+      });
+
+      return sensors;
     }
 
     // ─────────────────────────────────────────────────────────
@@ -608,21 +748,21 @@
     document.getElementById('propForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      let sensors;
-      try {
-        sensors = JSON.parse(document.getElementById('propSensors').value);
-      } catch (err) {
-        showToast('JSON invalide pour les capteurs', true);
+      // Collect sensors from UI
+      const sensors = collectSensorsFromUI();
+
+      const mode = document.getElementById('propEditMode').value;
+      const propId = document.getElementById('propId').value.trim();
+      const originalId = document.getElementById('propOriginalId').value;
+
+      if (!propId) {
+        showToast('L\'ID du prop est requis', true);
         return;
       }
 
-      const mode = document.getElementById('propEditMode').value;
-      const propId = document.getElementById('propId').value;
-      const originalId = document.getElementById('propOriginalId').value;
-
       const body = {
         propId,
-        name: document.getElementById('propName').value,
+        name: document.getElementById('propName').value.trim(),
         order: parseInt(document.getElementById('propOrder').value, 10),
         sensors
       };
