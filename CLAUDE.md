@@ -111,6 +111,15 @@ Web-based configuration UI for managing props without editing JSON files.
   - View/edit MQTT settings
   - Add/edit/delete props and sensors
   - Real-time prop status display (online/offline, solved)
+  - **Drag & drop reordering** of props with step grouping
+
+**Prop Ordering & Steps:**
+- Props are grouped into "steps" (Etape 1, Etape 2, etc.) based on their `order` value
+- Props with the **same order** are displayed as **parallel** (can be solved in any order)
+- Drag & drop zones:
+  - **Top 25%** of step card: Insert as new step BEFORE
+  - **Middle 50%**: Add as parallel to this step
+  - **Bottom 25%**: Insert as new step AFTER
 
 **REST API Endpoints:**
 ```
@@ -121,6 +130,8 @@ GET  /api/config/props        # List all props
 POST /api/config/props        # Add new prop
 PUT  /api/config/props/:id    # Update prop
 DELETE /api/config/props/:id  # Delete prop
+PUT  /api/config/props/:id/order  # Update prop order only
+POST /api/config/props/reorder    # Reorder prop (shifts others)
 PUT  /api/config/mqtt         # Update MQTT settings
 ```
 

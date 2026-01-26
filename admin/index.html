@@ -319,6 +319,15 @@
       margin-bottom: 4px;
     }
 
+    .prop-type-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: #00d4ff33;
+      color: #00d4ff;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
     .add-sensor-btn {
       width: 100%;
       margin-top: 10px;
@@ -340,6 +349,216 @@
       color: #666;
       font-size: 12px;
       padding: 15px;
+    }
+
+    .type-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .type-selector select {
+      flex: 1;
+      max-width: 250px;
+    }
+
+    .type-selector .type-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .empty-types {
+      color: #666;
+      font-size: 13px;
+      padding: 10px 0;
+    }
+
+    /* Step Groups for Props */
+    .step-group {
+      background: #1e1e35;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .step-header .step-number {
+      background: #00d4ff33;
+      color: #00d4ff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .step-props {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .step-props .card {
+      flex: 1;
+      min-width: 280px;
+      margin-bottom: 0;
+      cursor: grab;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    }
+
+    .step-props .card:active {
+      cursor: grabbing;
+    }
+
+    .step-props .card.dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+
+    .step-props .card .drag-handle {
+      color: #555;
+      margin-right: 8px;
+      cursor: grab;
+    }
+
+    /* Drop Zones */
+    .drop-zone {
+      height: 4px;
+      margin: 4px 0;
+      border-radius: 2px;
+      background: transparent;
+      transition: all 0.2s;
+    }
+
+    .drop-zone.drag-over {
+      height: 40px;
+      background: #00d4ff33;
+      border: 2px dashed #00d4ff;
+      margin: 8px 0;
+    }
+
+    .drop-zone.drag-over::after {
+      content: 'Nouvelle étape';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #00d4ff;
+      font-size: 12px;
+    }
+
+    /* Parallel drop indicator */
+    .parallel-indicator {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fa0;
+      color: #000;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+
+    .step-group.drag-over-parallel .parallel-indicator {
+      display: block;
+    }
+
+    /* New step indicator (when hovering top/bottom of step) */
+    .new-step-indicator {
+      display: none;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00d4ff;
+      color: #000;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      white-space: nowrap;
+    }
+
+    .step-group.drag-over-newstep-after {
+      border-bottom: 3px solid #00d4ff;
+    }
+
+    .step-group.drag-over-newstep-before {
+      border-top: 3px solid #00d4ff;
+    }
+
+    .step-group.drag-over-newstep-after .new-step-indicator,
+    .step-group.drag-over-newstep-before .new-step-indicator {
+      display: block;
+    }
+
+    .step-group.drag-over-newstep-after .new-step-indicator {
+      bottom: -16px;
+      top: auto;
+    }
+
+    .step-group.drag-over-newstep-before .new-step-indicator {
+      top: -16px;
+      bottom: auto;
+    }
+
+    .step-group.drag-over-newstep-after .parallel-indicator,
+    .step-group.drag-over-newstep-before .parallel-indicator {
+      display: none;
+    }
+
+    /* Highlight the step group when dragging over */
+    .step-group.drag-over-parallel {
+      background: #2a2a45;
+      border-color: #fa0;
+    }
+
+    /* Hide separate drop zones - we use card zones instead */
+    .drop-zone {
+      display: none;
+    }
+
+    .step-props .card {
+      position: relative;
+    }
+
+    .parallel-badge {
+      font-size: 11px;
+      color: #fa0;
+      background: #fa01a;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .drag-handle {
+      color: #555;
+      margin-right: 8px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .card[draggable="true"]:hover .drag-handle {
+      color: #00d4ff;
     }
   </style>
 </head>
@@ -387,6 +606,23 @@
     </div>
     <div class="actions">
       <button class="btn-secondary btn-small" onclick="openEditMqttModal()">Modifier</button>
+    </div>
+  </div>
+
+  <!-- Sensor Types -->
+  <h2>Types de Capteurs</h2>
+  <div class="card">
+    <div class="type-selector">
+      <select id="sensorTypesDropdown" onchange="onSensorTypeSelected()">
+        <option value="">-- Selectionner pour modifier --</option>
+      </select>
+      <div class="type-actions">
+        <button class="btn-secondary btn-small" onclick="editSelectedSensorType()" id="editTypeBtn" disabled>Modifier</button>
+        <button class="btn-danger btn-small" onclick="deleteSelectedSensorType()" id="deleteTypeBtn" disabled>Supprimer</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary btn-small" onclick="openAddSensorTypeModal()">+ Ajouter un type</button>
     </div>
   </div>
 
@@ -448,26 +684,29 @@
       <form id="propForm">
         <input type="hidden" id="propEditMode" value="add">
         <input type="hidden" id="propOriginalId">
+        <div class="form-group">
+          <label>Prop ID (unique)</label>
+          <input type="text" id="propId" placeholder="magie_puzzle1" required>
+        </div>
+        <input type="hidden" id="propOrder" value="1">
         <div class="form-row">
           <div class="form-group">
-            <label>Prop ID (unique)</label>
-            <input type="text" id="propId" placeholder="magie_puzzle1" required>
+            <label>Nom</label>
+            <input type="text" id="propName" placeholder="Puzzle Magique" required>
           </div>
           <div class="form-group">
-            <label>Ordre</label>
-            <input type="number" id="propOrder" value="1" min="1">
+            <label>Type de capteur</label>
+            <select id="propType">
+              <option value="">-- Aucun --</option>
+            </select>
           </div>
-        </div>
-        <div class="form-group">
-          <label>Nom</label>
-          <input type="text" id="propName" placeholder="Puzzle Magique" required>
         </div>
         <div class="form-group">
           <label>Capteurs</label>
           <div class="sensor-editor">
             <div class="sensor-header">
               <span>ID Capteur</span>
-              <span>Label (affichage)</span>
+              <span>Label</span>
               <span></span>
             </div>
             <div id="sensorsList"></div>
@@ -482,8 +721,43 @@
     </div>
   </div>
 
+  <!-- Add/Edit Sensor Type Modal -->
+  <div class="modal-overlay" id="sensorTypeModal">
+    <div class="modal" style="max-width: 400px;">
+      <h3 id="sensorTypeModalTitle">Ajouter un Type</h3>
+      <form id="sensorTypeForm">
+        <input type="hidden" id="sensorTypeEditMode" value="add">
+        <input type="hidden" id="sensorTypeOriginalId">
+        <div class="form-group">
+          <label>ID (unique, sans espaces)</label>
+          <input type="text" id="sensorTypeId" placeholder="ex: rfid, magnet, laser" required pattern="[a-z0-9_-]+">
+        </div>
+        <div class="form-group">
+          <label>Label (affichage)</label>
+          <input type="text" id="sensorTypeLabel" placeholder="ex: RFID, Aimant, Laser" required>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('sensorTypeModal')">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+
+  <!-- Confirm Delete Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width: 350px; text-align: center;">
+      <h3 style="margin-bottom: 10px;">Confirmer la suppression</h3>
+      <p id="confirmMessage" style="color: #aaa; margin-bottom: 20px;">Supprimer ce capteur ?</p>
+      <div class="actions" style="justify-content: center;">
+        <button type="button" class="btn-danger" id="confirmDeleteBtn" onclick="confirmDeleteSensor()">Supprimer</button>
+        <button type="button" class="btn-secondary" onclick="closeModal('confirmModal')">Annuler</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let config = null;
@@ -526,7 +800,52 @@
       document.getElementById('mqttBroker').textContent = config.mqtt.broker;
       document.getElementById('mqttBaseTopic').textContent = config.mqtt.baseTopic;
 
+      renderSensorTypes();
       renderProps();
+    }
+
+    function renderSensorTypes() {
+      const dropdown = document.getElementById('sensorTypesDropdown');
+      const types = config.sensorTypes || [];
+
+      dropdown.innerHTML = '<option value="">-- Selectionner pour modifier --</option>' +
+        types.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+
+      // Reset buttons state
+      document.getElementById('editTypeBtn').disabled = true;
+      document.getElementById('deleteTypeBtn').disabled = true;
+
+      // Also update the prop type dropdown
+      updatePropTypeDropdown();
+    }
+
+    function updatePropTypeDropdown(selectedType = '') {
+      const dropdown = document.getElementById('propType');
+      const types = config.sensorTypes || [];
+
+      dropdown.innerHTML = '<option value="">-- Aucun --</option>' +
+        types.map(t => `<option value="${t.id}" ${t.id === selectedType ? 'selected' : ''}>${t.label}</option>`).join('');
+    }
+
+    function onSensorTypeSelected() {
+      const dropdown = document.getElementById('sensorTypesDropdown');
+      const hasSelection = dropdown.value !== '';
+      document.getElementById('editTypeBtn').disabled = !hasSelection;
+      document.getElementById('deleteTypeBtn').disabled = !hasSelection;
+    }
+
+    function editSelectedSensorType() {
+      const typeId = document.getElementById('sensorTypesDropdown').value;
+      if (typeId) {
+        openEditSensorTypeModal(typeId);
+      }
+    }
+
+    function deleteSelectedSensorType() {
+      const typeId = document.getElementById('sensorTypesDropdown').value;
+      if (typeId) {
+        deleteSensorType(typeId);
+      }
     }
 
     function renderProps() {
@@ -537,38 +856,85 @@
         return;
       }
 
-      container.innerHTML = config.props.map(prop => {
-        // Find runtime state for this prop
-        const runtimeProp = state?.props?.find(p => p.propId === prop.propId);
-        const isOnline = runtimeProp?.online || false;
-        const isSolved = runtimeProp?.solved || false;
+      // Group props by order (step)
+      const stepGroups = {};
+      config.props.forEach(prop => {
+        const order = prop.order || 1;
+        if (!stepGroups[order]) {
+          stepGroups[order] = [];
+        }
+        stepGroups[order].push(prop);
+      });
 
-        const sensorsHtml = prop.sensors.map(s => {
-          const triggered = runtimeProp?.sensors?.find(rs => rs.sensorId === s.sensorId)?.triggered;
-          return `<span class="sensor-tag ${triggered ? 'triggered' : ''}">${s.label}</span>`;
-        }).join('');
+      // Get sorted step numbers
+      const stepNumbers = Object.keys(stepGroups).map(Number).sort((a, b) => a - b);
 
-        return `
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">${prop.name}</div>
-                <div class="card-subtitle">${prop.propId}</div>
-              </div>
-              <div class="prop-status">
-                <div class="dot ${isOnline ? 'online' : ''}" title="${isOnline ? 'En ligne' : 'Hors ligne'}"></div>
-                <div class="dot ${isSolved ? 'solved' : ''}" title="${isSolved ? 'Resolu' : 'Non resolu'}"></div>
-                <span style="font-size:12px;color:#666;">Ordre: ${prop.order}</span>
-              </div>
+      let html = '';
+
+      // Initial drop zone
+      html += `<div class="drop-zone" data-target-step="0" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropBetween(event, 0)"></div>`;
+
+      stepNumbers.forEach((stepNum, stepIndex) => {
+        const propsInStep = stepGroups[stepNum];
+        const isParallel = propsInStep.length > 1;
+
+        html += `
+          <div class="step-group" data-step="${stepNum}" ondragover="handleStepDragOver(event)" ondragleave="handleStepDragLeave(event)" ondrop="handleDropOnStep(event, ${stepNum})">
+            <div class="step-header">
+              <span class="step-number">Etape ${stepIndex + 1}</span>
+              ${isParallel ? '<span class="parallel-badge">' + propsInStep.length + ' props en parallele</span>' : ''}
             </div>
-            <div class="sensors-list">${sensorsHtml || '<span style="color:#666;font-size:12px;">Aucun capteur</span>'}</div>
-            <div class="actions">
-              <button class="btn-secondary btn-small" onclick="openEditPropModal('${prop.propId}')">Modifier</button>
-              <button class="btn-danger btn-small" onclick="deleteProp('${prop.propId}')">Supprimer</button>
+            <div class="step-props">
+              ${propsInStep.map(prop => renderPropCard(prop)).join('')}
             </div>
+            <div class="parallel-indicator">Ajouter en parallele</div>
+            <div class="new-step-indicator">Nouvelle etape</div>
           </div>
         `;
+
+        // Drop zone after each step group
+        html += `<div class="drop-zone" data-target-step="${stepNum}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropBetween(event, ${stepNum})"></div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderPropCard(prop) {
+      // Find runtime state for this prop
+      const runtimeProp = state?.props?.find(p => p.propId === prop.propId);
+      const isOnline = runtimeProp?.online || false;
+      const isSolved = runtimeProp?.solved || false;
+
+      // Type is now at prop level
+      const propTypeLabel = getTypeLabel(prop.type);
+      const propTypeBadge = propTypeLabel ? `<span class="prop-type-badge">${propTypeLabel}</span>` : '';
+
+      const sensorsHtml = prop.sensors.map(s => {
+        const triggered = runtimeProp?.sensors?.find(rs => rs.sensorId === s.sensorId)?.triggered;
+        return `<span class="sensor-tag ${triggered ? 'triggered' : ''}">${s.label}</span>`;
       }).join('');
+
+      return `
+        <div class="card" draggable="true" data-prop-id="${prop.propId}" data-prop-order="${prop.order}"
+             ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)">
+          <div class="card-header">
+            <div>
+              <span class="drag-handle">⋮⋮</span>
+              <span class="card-title">${prop.name}${propTypeBadge}</span>
+              <div class="card-subtitle">${prop.propId}</div>
+            </div>
+            <div class="prop-status">
+              <div class="dot ${isOnline ? 'online' : ''}" title="${isOnline ? 'En ligne' : 'Hors ligne'}"></div>
+              <div class="dot ${isSolved ? 'solved' : ''}" title="${isSolved ? 'Resolu' : 'Non resolu'}"></div>
+            </div>
+          </div>
+          <div class="sensors-list">${sensorsHtml || '<span style="color:#666;font-size:12px;">Aucun capteur</span>'}</div>
+          <div class="actions">
+            <button class="btn-secondary btn-small" onclick="openEditPropModal('${prop.propId}')">Modifier</button>
+            <button class="btn-danger btn-small" onclick="deleteProp('${prop.propId}')">Supprimer</button>
+          </div>
+        </div>
+      `;
     }
 
     // ─────────────────────────────────────────────────────────
@@ -603,7 +969,15 @@
       document.getElementById('propId').value = '';
       document.getElementById('propId').disabled = false;
       document.getElementById('propName').value = '';
-      document.getElementById('propOrder').value = config.props.length + 1;
+
+      // Auto-assign next order (max existing order + 1)
+      const maxOrder = config.props.length > 0
+        ? Math.max(...config.props.map(p => p.order || 1))
+        : 0;
+      document.getElementById('propOrder').value = maxOrder + 1;
+
+      // Update prop type dropdown
+      updatePropTypeDropdown('');
 
       // Initialize with one empty sensor
       renderSensorsList([{ sensorId: '', label: '' }]);
@@ -620,11 +994,41 @@
       document.getElementById('propId').value = prop.propId;
       document.getElementById('propId').disabled = true;
       document.getElementById('propName').value = prop.name;
-      document.getElementById('propOrder').value = prop.order;
+      document.getElementById('propOrder').value = prop.order; // Preserved but hidden, order changed via drag & drop
 
-      // Populate sensors list
-      renderSensorsList(prop.sensors.length > 0 ? prop.sensors : [{ sensorId: '', label: '' }]);
+      // Update prop type dropdown with current value
+      updatePropTypeDropdown(prop.type || '');
+
+      // Populate sensors list (type is now at prop level)
+      const sensors = prop.sensors.map(s => ({
+        sensorId: s.sensorId,
+        label: s.label || ''
+      }));
+      renderSensorsList(sensors.length > 0 ? sensors : [{ sensorId: '', label: '' }]);
       openModal('propModal');
+    }
+
+    function openAddSensorTypeModal() {
+      document.getElementById('sensorTypeModalTitle').textContent = 'Ajouter un Type';
+      document.getElementById('sensorTypeEditMode').value = 'add';
+      document.getElementById('sensorTypeOriginalId').value = '';
+      document.getElementById('sensorTypeId').value = '';
+      document.getElementById('sensorTypeId').disabled = false;
+      document.getElementById('sensorTypeLabel').value = '';
+      openModal('sensorTypeModal');
+    }
+
+    function openEditSensorTypeModal(typeId) {
+      const sensorType = (config.sensorTypes || []).find(t => t.id === typeId);
+      if (!sensorType) return;
+
+      document.getElementById('sensorTypeModalTitle').textContent = 'Modifier le Type';
+      document.getElementById('sensorTypeEditMode').value = 'edit';
+      document.getElementById('sensorTypeOriginalId').value = typeId;
+      document.getElementById('sensorTypeId').value = sensorType.id;
+      document.getElementById('sensorTypeId').disabled = true;
+      document.getElementById('sensorTypeLabel').value = sensorType.label;
+      openModal('sensorTypeModal');
     }
 
     // ─────────────────────────────────────────────────────────
@@ -644,11 +1048,11 @@
           <input type="text"
                  class="sensor-id"
                  value="${sensor.sensorId || ''}"
-                 placeholder="ex: rfid1, magnet1">
+                 placeholder="ex: sensor1, magnet1">
           <input type="text"
                  class="sensor-label"
                  value="${sensor.label || ''}"
-                 placeholder="ex: RFID, Aimant">
+                 placeholder="Description du capteur">
           <button type="button" class="btn-danger btn-icon" onclick="removeSensorRow(${index})" title="Supprimer">×</button>
         </div>
       `).join('');
@@ -667,10 +1071,26 @@
       }
     }
 
+    let pendingDeleteSensorIndex = null;
+
     function removeSensorRow(index) {
+      // Store the index and show confirmation modal
+      pendingDeleteSensorIndex = index;
       const sensors = collectSensorsFromUI();
-      sensors.splice(index, 1);
-      renderSensorsList(sensors.length > 0 ? sensors : []);
+      const sensor = sensors[index];
+      const sensorName = sensor?.label || sensor?.sensorId || `Capteur ${index + 1}`;
+      document.getElementById('confirmMessage').textContent = `Supprimer "${sensorName}" ?`;
+      openModal('confirmModal');
+    }
+
+    function confirmDeleteSensor() {
+      if (pendingDeleteSensorIndex !== null) {
+        const sensors = collectSensorsFromUI();
+        sensors.splice(pendingDeleteSensorIndex, 1);
+        renderSensorsList(sensors.length > 0 ? sensors : []);
+        pendingDeleteSensorIndex = null;
+      }
+      closeModal('confirmModal');
     }
 
     function collectSensorsFromUI() {
@@ -683,7 +1103,10 @@
 
         // Only include if at least sensorId is filled
         if (sensorId) {
-          sensors.push({ sensorId, label: label || sensorId });
+          sensors.push({
+            sensorId,
+            label: label || sensorId
+          });
         }
       });
 
@@ -754,6 +1177,7 @@
       const mode = document.getElementById('propEditMode').value;
       const propId = document.getElementById('propId').value.trim();
       const originalId = document.getElementById('propOriginalId').value;
+      const propType = document.getElementById('propType').value;
 
       if (!propId) {
         showToast('L\'ID du prop est requis', true);
@@ -763,6 +1187,7 @@
       const body = {
         propId,
         name: document.getElementById('propName').value.trim(),
+        type: propType,
         order: parseInt(document.getElementById('propOrder').value, 10),
         sensors
       };
@@ -815,9 +1240,263 @@
       }
     }
 
+    // Sensor Type Form Handler
+    document.getElementById('sensorTypeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const mode = document.getElementById('sensorTypeEditMode').value;
+      const id = document.getElementById('sensorTypeId').value.trim().toLowerCase();
+      const originalId = document.getElementById('sensorTypeOriginalId').value;
+      const label = document.getElementById('sensorTypeLabel').value.trim();
+
+      if (!id || !label) {
+        showToast('ID et label sont requis', true);
+        return;
+      }
+
+      try {
+        let res;
+        if (mode === 'add') {
+          res = await fetch('/api/config/sensor-types', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, label })
+          });
+        } else {
+          res = await fetch(`/api/config/sensor-types/${originalId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label })
+          });
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(mode === 'add' ? 'Type ajoute' : 'Type mis a jour');
+          closeModal('sensorTypeModal');
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    });
+
+    async function deleteSensorType(typeId) {
+      const typeLabel = getTypeLabel(typeId);
+      if (!confirm(`Supprimer le type "${typeLabel}" ?`)) return;
+
+      try {
+        const res = await fetch(`/api/config/sensor-types/${typeId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Type supprime');
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Drag & Drop
+    // ─────────────────────────────────────────────────────────
+
+    let draggedPropId = null;
+    let draggedPropOrder = null;
+
+    function handleDragStart(event) {
+      const card = event.target.closest('.card');
+      if (!card) return;
+
+      draggedPropId = card.dataset.propId;
+      draggedPropOrder = parseInt(card.dataset.propOrder, 10);
+
+      card.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedPropId);
+    }
+
+    function handleDragEnd(event) {
+      const card = event.target.closest('.card');
+      if (card) {
+        card.classList.remove('dragging');
+      }
+      draggedPropId = null;
+      draggedPropOrder = null;
+
+      // Remove all drag-over states
+      document.querySelectorAll('.drop-zone').forEach(zone => zone.classList.remove('drag-over'));
+      document.querySelectorAll('.step-group').forEach(group => {
+        group.classList.remove('drag-over-parallel', 'drag-over-newstep-before', 'drag-over-newstep-after');
+      });
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      event.target.classList.add('drag-over');
+    }
+
+    function handleDragLeave(event) {
+      event.target.classList.remove('drag-over');
+    }
+
+    function handleStepDragOver(event) {
+      event.preventDefault();
+      const stepGroup = event.target.closest('.step-group');
+      if (stepGroup) {
+        const stepOrder = parseInt(stepGroup.dataset.step, 10);
+        const rect = stepGroup.getBoundingClientRect();
+        const mouseY = event.clientY;
+        const topZoneEnd = rect.top + (rect.height * 0.25);
+        const bottomZoneStart = rect.bottom - (rect.height * 0.25);
+
+        // Remove all classes first
+        stepGroup.classList.remove('drag-over-parallel', 'drag-over-newstep-before', 'drag-over-newstep-after');
+
+        if (mouseY <= topZoneEnd) {
+          // Top 25% - new step before
+          stepGroup.classList.add('drag-over-newstep-before');
+        } else if (mouseY >= bottomZoneStart) {
+          // Bottom 25% - new step after
+          stepGroup.classList.add('drag-over-newstep-after');
+        } else if (stepOrder !== draggedPropOrder) {
+          // Middle 50% - parallel (only if not same step)
+          stepGroup.classList.add('drag-over-parallel');
+        }
+      }
+      event.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleStepDragLeave(event) {
+      const stepGroup = event.target.closest('.step-group');
+      if (stepGroup && !stepGroup.contains(event.relatedTarget)) {
+        stepGroup.classList.remove('drag-over-parallel', 'drag-over-newstep-before', 'drag-over-newstep-after');
+      }
+    }
+
+    // Drop between steps -> create new sequential step
+    async function handleDropBetween(event, afterStepOrder) {
+      event.preventDefault();
+      event.target.classList.remove('drag-over');
+
+      if (!draggedPropId) return;
+
+      // Calculate new order: insert after afterStepOrder
+      // Get all unique orders sorted
+      const orders = [...new Set(config.props.map(p => p.order))].sort((a, b) => a - b);
+      const afterIndex = orders.indexOf(afterStepOrder);
+
+      let newOrder;
+      if (afterStepOrder === 0) {
+        // Dropped at the very beginning
+        newOrder = orders.length > 0 ? orders[0] - 1 : 1;
+        if (newOrder < 1) {
+          // Need to shift all orders up
+          await shiftOrdersAndMove(draggedPropId, 1, true);
+          return;
+        }
+      } else {
+        // Dropped after a step
+        const nextOrder = orders[afterIndex + 1];
+        if (nextOrder !== undefined) {
+          // There's a step after, use a value between
+          newOrder = afterStepOrder + 1;
+          if (newOrder >= nextOrder) {
+            // Need to shift orders to make room
+            await shiftOrdersAndMove(draggedPropId, newOrder, true);
+            return;
+          }
+        } else {
+          // Dropped at the end
+          newOrder = afterStepOrder + 1;
+        }
+      }
+
+      await updatePropOrder(draggedPropId, newOrder);
+    }
+
+    // Drop on step -> add as parallel (middle) OR new step (top/bottom zones)
+    async function handleDropOnStep(event, stepOrder) {
+      event.preventDefault();
+      const stepGroup = event.target.closest('.step-group');
+      const isNewStepBefore = stepGroup?.classList.contains('drag-over-newstep-before');
+      const isNewStepAfter = stepGroup?.classList.contains('drag-over-newstep-after');
+
+      if (stepGroup) {
+        stepGroup.classList.remove('drag-over-parallel', 'drag-over-newstep-before', 'drag-over-newstep-after');
+      }
+
+      if (!draggedPropId) return;
+
+      if (isNewStepBefore) {
+        // Top zone - create new step BEFORE this one
+        const orders = [...new Set(config.props.map(p => p.order))].sort((a, b) => a - b);
+        const stepIndex = orders.indexOf(stepOrder);
+        const prevOrder = stepIndex > 0 ? orders[stepIndex - 1] : 0;
+        await handleDropBetween(event, prevOrder);
+      } else if (isNewStepAfter) {
+        // Bottom zone - create new step AFTER this one
+        await handleDropBetween(event, stepOrder);
+      } else if (draggedPropOrder !== stepOrder) {
+        // Middle zone - add as parallel (same order), only if different step
+        await updatePropOrder(draggedPropId, stepOrder);
+      }
+    }
+
+    async function updatePropOrder(propId, newOrder) {
+      try {
+        const res = await fetch(`/api/config/props/${propId}/order`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: newOrder })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Ordre mis a jour');
+          showRestartWarning();
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    async function shiftOrdersAndMove(propId, targetOrder, insertBefore = false) {
+      try {
+        const res = await fetch(`/api/config/props/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ propId, targetOrder, insertBefore })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Ordre mis a jour');
+          showRestartWarning();
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
     // ─────────────────────────────────────────────────────────
     // Utilities
     // ─────────────────────────────────────────────────────────
+
+    function getTypeLabel(typeId) {
+      if (!typeId) return '';
+      const sensorType = (config.sensorTypes || []).find(t => t.id === typeId);
+      return sensorType ? sensorType.label : typeId;
+    }
 
     function showToast(message, isError = false) {
       const toast = document.getElementById('toast');
