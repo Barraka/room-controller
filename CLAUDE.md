@@ -82,6 +82,9 @@ resumeSession()
 endSession(result, comments)
 abortSession()
 incrementHints()
+
+// Config hot reload
+reloadConfig(newConfig)     // Updates props without restart
 ```
 
 ### 2. MQTT Client (`src/mqtt-client.js`)
@@ -98,6 +101,7 @@ Handles dashboard connections:
 - Sends `hello` + `full_state` on connect
 - Receives commands (`cmd`, `session_cmd`, `hint_given`)
 - Broadcasts state updates to all connected dashboards
+- `broadcastFullState()` - sends current state to all clients (used for hot reload)
 
 Follows **WebSocket Contract v1.0** (see `../WEBSOCKET_CONTRACT_v1.md`)
 
@@ -125,6 +129,7 @@ Web-based configuration UI for managing props without editing JSON files.
 ```
 GET  /api/config              # Full configuration
 GET  /api/state               # Runtime state (props, session)
+POST /api/reload              # Hot reload config (no restart needed)
 PUT  /api/config/room         # Update room info
 GET  /api/config/props        # List all props
 POST /api/config/props        # Add new prop
@@ -133,9 +138,13 @@ DELETE /api/config/props/:id  # Delete prop
 PUT  /api/config/props/:id/order  # Update prop order only
 POST /api/config/props/reorder    # Reorder prop (shifts others)
 PUT  /api/config/mqtt         # Update MQTT settings
+GET  /api/config/sensor-types # List sensor types
+POST /api/config/sensor-types # Add sensor type
+PUT  /api/config/sensor-types/:id  # Update sensor type
+DELETE /api/config/sensor-types/:id  # Delete sensor type
 ```
 
-**Note**: Config changes require a restart to take effect.
+**Hot Reload**: Click "Appliquer" button after config changes to apply without restart. The admin server reloads the config, updates state manager, and broadcasts `full_state` to all connected dashboards.
 
 ---
 

@@ -13,6 +13,9 @@ const ADMIN_DIR = join(__dirname, '..', 'admin');
 export function createAdminServer(port, stateManager) {
   const app = express();
 
+  // WebSocket server reference (set after initialization)
+  let wsServer = null;
+
   app.use(express.json());
 
   // Serve static admin UI files
@@ -39,6 +42,31 @@ export function createAdminServer(port, stateManager) {
       props: stateManager.getProps(),
       session: stateManager.getSession()
     });
+  });
+
+  // Reload config without restart (hot reload)
+  app.post('/api/reload', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      const result = stateManager.reloadConfig(config);
+
+      if (result.success) {
+        // Broadcast updated state to all connected dashboards
+        if (wsServer) {
+          wsServer.broadcastFullState();
+        }
+
+        res.json({
+          success: true,
+          message: 'Config reloaded successfully',
+          props: stateManager.getProps().length
+        });
+      } else {
+        res.status(500).json({ error: 'Failed to reload config', details: result.error });
+      }
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to reload config', details: err.message });
+    }
   });
 
   // Update room info
@@ -346,6 +374,11 @@ export function createAdminServer(port, stateManager) {
   });
 
   return {
+    // Set WebSocket server reference (called from index.js)
+    setWsServer(ws) {
+      wsServer = ws;
+    },
+
     close: () => server.close()
   };
 }

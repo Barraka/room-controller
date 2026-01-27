@@ -569,7 +569,8 @@
   </h1>
 
   <div class="restart-warning" id="restartWarning">
-    <span>Configuration modifiee. Redemarrez le Room Controller pour appliquer les changements.</span>
+    <span>Configuration modifiee.</span>
+    <button class="btn-primary btn-small" onclick="reloadConfig()">Appliquer</button>
     <button class="btn-secondary btn-small" onclick="location.reload()">Rafraichir</button>
   </div>
 
@@ -1508,6 +1509,23 @@
 
     function showRestartWarning() {
       document.getElementById('restartWarning').classList.add('show');
+    }
+
+    async function reloadConfig() {
+      try {
+        const res = await fetch('/api/reload', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Configuration rechargee (' + data.props + ' props)');
+          document.getElementById('restartWarning').classList.remove('show');
+          fetchConfig();
+          fetchState();
+        } else {
+          showToast(data.error || 'Erreur lors du rechargement', true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
     }
 
     // Close modals on backdrop click

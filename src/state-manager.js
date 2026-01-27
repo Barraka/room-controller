@@ -388,6 +388,72 @@ export function createStateManager(config) {
       session.hintsGiven++;
       console.log(`[State] Hint given (total: ${session.hintsGiven})`);
       return { success: true, session: this.getSession() };
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // Config reload (hot reload without restart)
+    // ─────────────────────────────────────────────────────────
+
+    reloadConfig(newConfig) {
+      // Update room info
+      config.room = newConfig.room;
+
+      // Get current prop IDs and new prop IDs
+      const currentPropIds = new Set(props.keys());
+      const newPropIds = new Set(newConfig.props.map(p => p.propId));
+
+      // Remove props that no longer exist
+      for (const propId of currentPropIds) {
+        if (!newPropIds.has(propId)) {
+          props.delete(propId);
+          console.log(`[State] Removed prop: ${propId}`);
+        }
+      }
+
+      // Add or update props
+      for (const propConfig of newConfig.props) {
+        const existing = props.get(propConfig.propId);
+
+        if (existing) {
+          // Update config fields, preserve runtime state
+          existing.name = propConfig.name;
+          existing.order = propConfig.order;
+
+          // Update sensors: preserve triggered state for existing sensors
+          const existingSensors = new Map(existing.sensors.map(s => [s.sensorId, s]));
+          existing.sensors = propConfig.sensors.map(s => {
+            const existingSensor = existingSensors.get(s.sensorId);
+            return {
+              sensorId: s.sensorId,
+              label: s.label,
+              triggered: existingSensor ? existingSensor.triggered : false
+            };
+          });
+
+          console.log(`[State] Updated prop: ${propConfig.propId}`);
+        } else {
+          // New prop - add with default runtime state
+          props.set(propConfig.propId, {
+            propId: propConfig.propId,
+            name: propConfig.name,
+            order: propConfig.order,
+            online: false,
+            solved: false,
+            override: false,
+            startedAt: null,
+            solvedAt: null,
+            sensors: propConfig.sensors.map(s => ({
+              sensorId: s.sensorId,
+              label: s.label,
+              triggered: false
+            }))
+          });
+          console.log(`[State] Added new prop: ${propConfig.propId}`);
+        }
+      }
+
+      console.log(`[State] Config reloaded: ${props.size} props`);
+      return { success: true };
     }
   };
 }

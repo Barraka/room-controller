@@ -255,6 +255,16 @@ export function createWebSocketServer(config, stateManager) {
     // Broadcast to all clients
     broadcast,
 
+    // Broadcast full state to all clients (used after config reload)
+    broadcastFullState() {
+      console.log('[WS] Broadcasting full state to all dashboards');
+      broadcast({
+        type: 'full_state',
+        timestamp: Date.now(),
+        payload: stateManager.getFullState()
+      });
+    },
+
     // Close server
     close() {
       for (const client of clients) {

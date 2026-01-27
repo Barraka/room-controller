@@ -35,6 +35,9 @@ wsServer.setMqttClient(mqttClient);
 const adminPort = config.admin?.port || 3002;
 const adminServer = createAdminServer(adminPort, stateManager);
 
+// Wire up WebSocket server to Admin server (for config reload broadcasts)
+adminServer.setWsServer(wsServer);
+
 // Graceful shutdown
 const shutdown = () => {
   console.log('\n[Server] Shutting down...');
