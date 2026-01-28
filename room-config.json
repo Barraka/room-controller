@@ -14,14 +14,147 @@
   "admin": {
     "port": 3002
   },
+  "sensorTypes": [
+    {
+      "id": "rfid",
+      "label": "RFID"
+    },
+    {
+      "id": "magnet",
+      "label": "Aimant"
+    },
+    {
+      "id": "button",
+      "label": "Bouton"
+    },
+    {
+      "id": "proximity",
+      "label": "Proximité"
+    },
+    {
+      "id": "light",
+      "label": "Lumière"
+    },
+    {
+      "id": "weight",
+      "label": "Poids"
+    },
+    {
+      "id": "contact",
+      "label": "Contact"
+    },
+    {
+      "id": "laser",
+      "label": "Laser"
+    },
+    {
+      "id": "touch",
+      "label": "Tactile"
+    },
+    {
+      "id": "keypad",
+      "label": "Clavier"
+    }
+  ],
   "props": [
+    {
+      "propId": "qsdfqsdf",
+      "name": "Etape 2",
+      "order": 1,
+      "sensors": [
+        {
+          "sensorId": "qsdfqsdf",
+          "label": "qsdfqsdf"
+        },
+        {
+          "sensorId": "qsdfqsdfrr",
+          "label": "qsdfqsdf"
+        }
+      ],
+      "type": "button"
+    },
+    {
+      "propId": "qdsfqsdf",
+      "name": "Etape 1 b",
+      "type": "button",
+      "order": 2,
+      "sensors": [
+        {
+          "sensorId": "sensor1",
+          "label": "Capteur 1"
+        }
+      ]
+    },
     {
       "propId": "magie_roueFortune",
       "name": "Roue de la Fortune",
-      "order": 1,
+      "type": "magnet",
+      "order": 2,
       "sensors": [
-        { "sensorId": "rfid1", "label": "RFID" },
-        { "sensorId": "magnet1", "label": "Aimant" }
+        {
+          "sensorId": "magnet1",
+          "label": "Aimant principal"
+        },
+        {
+          "sensorId": "magnet2",
+          "label": "Aimant secondaire"
+        }
+      ]
+    },
+    {
+      "propId": "unique3",
+      "name": "test3",
+      "type": "proximity",
+      "order": 3,
+      "sensors": [
+        {
+          "sensorId": "magnet1",
+          "label": "Aimant un"
+        }
+      ]
+    },
+    {
+      "propId": "qsfqsef",
+      "name": "etape trois",
+      "order": 4,
+      "sensors": [
+        {
+          "sensorId": "b&",
+          "label": "bbbb"
+        },
+        {
+          "sensorId": "b2",
+          "label": "bbb"
+        },
+        {
+          "sensorId": "dgfdf",
+          "label": "qsdgf"
+        },
+        {
+          "sensorId": "sdfsd",
+          "label": "dfgdf"
+        },
+        {
+          "sensorId": "sdfqsdf",
+          "label": "dsgfds"
+        }
+      ],
+      "type": "magnet"
+    },
+    {
+      "propId": "qsfdqsdfqsd",
+      "name": "puzzle4",
+      "type": "magnet",
+      "order": 5,
+      "sensors": [
+        {
+          "sensorId": "qsdf",
+          "label": "sdfdsf"
+        },
+        {
+          "sensorId": "sdfqsdf",
+          "label": "qsdfqsfd"
+        }
       ]
     }
   ]

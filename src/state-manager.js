@@ -178,7 +178,6 @@ export function createStateManager(config) {
     forceSolve(propId) {
       const prop = props.get(propId);
       if (!prop) return { success: false, error: 'Unknown prop' };
-      if (!prop.online) return { success: false, error: 'Prop is offline' };
 
       const now = Date.now();
       const changes = {};
@@ -199,7 +198,6 @@ export function createStateManager(config) {
     resetProp(propId) {
       const prop = props.get(propId);
       if (!prop) return { success: false, error: 'Unknown prop' };
-      if (!prop.online) return { success: false, error: 'Prop is offline' };
 
       const changes = {};
       prop.solved = false;
@@ -229,7 +227,6 @@ export function createStateManager(config) {
     triggerSensor(propId, sensorId) {
       const prop = props.get(propId);
       if (!prop) return { success: false, error: 'Unknown prop' };
-      if (!prop.online) return { success: false, error: 'Prop is offline' };
 
       const sensor = prop.sensors.find(s => s.sensorId === sensorId);
       if (!sensor) return { success: false, error: 'Unknown sensor' };
