@@ -67,11 +67,11 @@ export function createWebSocketServer(config, stateManager) {
   /**
    * Send acknowledgement to a client
    */
-  function sendAck(ws, requestId, success, error = null) {
+  function sendAck(ws, requestId, success, error = null, extra = null) {
     send(ws, {
       type: 'cmd_ack',
       timestamp: Date.now(),
-      payload: { requestId, success, error }
+      payload: { requestId, success, error, ...extra }
     });
   }
 
@@ -197,7 +197,9 @@ export function createWebSocketServer(config, stateManager) {
         result = { success: false, error: `Unknown session command: ${command}` };
     }
 
-    sendAck(ws, requestId, result.success, result.error);
+    sendAck(ws, requestId, result.success, result.error,
+      command === 'end' && result.sessionRecord ? { stepDurations: result.sessionRecord.stepDurations } : null
+    );
 
     // Broadcast session change
     if (result.success) {

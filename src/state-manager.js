@@ -338,6 +338,34 @@ export function createStateManager(config) {
           : null
       }));
 
+      // Compute step durations (sequential timing per step group)
+      const sortedProps = Array.from(props.values()).sort((a, b) => a.order - b.order);
+      const steps = [];
+      let currentOrder = null;
+      for (const prop of sortedProps) {
+        if (prop.order !== currentOrder) {
+          steps.push({ order: prop.order, props: [prop] });
+          currentOrder = prop.order;
+        } else {
+          steps[steps.length - 1].props.push(prop);
+        }
+      }
+
+      const stepDurations = [];
+      let prevStepSolvedAt = session.startedAt;
+      for (const step of steps) {
+        const allSolved = step.props.every(p => p.solved);
+        if (!allSolved) {
+          // Step not completed — record as null duration
+          stepDurations.push({ step: step.order, durationMs: null, propIds: step.props.map(p => p.propId) });
+          break; // Subsequent steps can't have started
+        }
+        const latestSolvedAt = Math.max(...step.props.map(p => p.solvedAt));
+        const durationMs = latestSolvedAt - prevStepSolvedAt;
+        stepDurations.push({ step: step.order, durationMs, propIds: step.props.map(p => p.propId) });
+        prevStepSolvedAt = latestSolvedAt;
+      }
+
       // Create session record
       const sessionRecord = {
         sessionId: `session-${session.startedAt}`,
@@ -348,7 +376,8 @@ export function createStateManager(config) {
         realDurationMs,
         hintsGiven: session.hintsGiven,
         comments,
-        propStats
+        propStats,
+        stepDurations
       };
 
       // Save to history

@@ -242,8 +242,28 @@ npm start            # Production start
 
 ---
 
+## Recent Changes
+
+### Step Durations in Session Records
+- `endSession()` in state-manager now computes `stepDurations` — sequential per-step timing based on prop `order` grouping
+- Each entry: `{ step, durationMs, propIds }`. Step N's duration = time from previous step solved to this step solved. Unsolved steps get `durationMs: null`.
+- `stepDurations` is included in the session record saved to `session-history.json`
+- WebSocket `cmd_ack` for session end now includes `stepDurations` (via extra data param in `sendAck`)
+
+### sendAck Extended
+- `sendAck()` in websocket-server now accepts optional `extra` object that gets spread into the ack payload
+
+---
+
+## Known Issues / TODO
+
+- **No MQTT reset on session start**: `startSession()` resets logical prop state in state-manager, but does NOT send MQTT `reset` commands to ESP32 props. Physical props (sensors, maglocks) are not re-armed. The GM must currently reset props manually or via individual reset buttons in the dashboard.
+
+---
+
 ## Future Considerations
 
+- **MQTT reset broadcast on session start** - Send `reset` command to all props when session starts
 - Session history query endpoint (dashboard requests past sessions)
 - Prop auto-discovery (new prop on MQTT → prompt to configure)
 - Multi-dashboard support (already works, just broadcast)
