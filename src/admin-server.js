@@ -561,6 +561,102 @@ export function createAdminServer(port, stateManager) {
   });
 
   // ─────────────────────────────────────────────────────────
+  // Session History & Stats API
+  // ─────────────────────────────────────────────────────────
+
+  app.get('/api/sessions', (req, res) => {
+    res.json(stateManager.getSessionHistory());
+  });
+
+  app.get('/api/stats', (req, res) => {
+    try {
+      const sessions = stateManager.getSessionHistory();
+      const currentProps = stateManager.getProps();
+      const propNameMap = {};
+      for (const p of currentProps) {
+        propNameMap[p.propId] = p.name;
+      }
+
+      // Summary
+      const totalSessions = sessions.length;
+      const victories = sessions.filter(s => s.result === 'victory').length;
+      const defeats = sessions.filter(s => s.result === 'defeat').length;
+      const winRate = totalSessions > 0 ? Math.round((victories / totalSessions) * 1000) / 10 : 0;
+
+      const durationsMs = sessions.filter(s => s.realDurationMs > 0).map(s => s.realDurationMs);
+      const avgDurationMs = durationsMs.length > 0 ? Math.round(durationsMs.reduce((a, b) => a + b, 0) / durationsMs.length) : 0;
+
+      const hintsArr = sessions.map(s => s.hintsGiven || 0);
+      const avgHints = hintsArr.length > 0 ? Math.round((hintsArr.reduce((a, b) => a + b, 0) / hintsArr.length) * 10) / 10 : 0;
+
+      const summary = { totalSessions, victories, defeats, winRate, avgDurationMs, avgHints };
+
+      // Per-prop stats
+      const propAccum = {};
+      for (const sess of sessions) {
+        if (!sess.propStats) continue;
+        for (const ps of sess.propStats) {
+          if (!propAccum[ps.propId]) {
+            propAccum[ps.propId] = { sessionsWithData: 0, solved: 0, overrides: 0, solveTimes: [] };
+          }
+          const acc = propAccum[ps.propId];
+          acc.sessionsWithData++;
+          if (ps.solved) {
+            acc.solved++;
+            if (ps.override) acc.overrides++;
+            if (ps.timeToSolveMs != null && !ps.override) {
+              acc.solveTimes.push(ps.timeToSolveMs);
+            }
+          }
+        }
+      }
+
+      const propStats = {};
+      for (const [propId, acc] of Object.entries(propAccum)) {
+        const solveRate = acc.sessionsWithData > 0 ? Math.round((acc.solved / acc.sessionsWithData) * 1000) / 10 : 0;
+        const overrideRate = acc.solved > 0 ? Math.round((acc.overrides / acc.solved) * 1000) / 10 : 0;
+        const avgSolveTimeMs = acc.solveTimes.length > 0 ? Math.round(acc.solveTimes.reduce((a, b) => a + b, 0) / acc.solveTimes.length) : null;
+        const fastestSolveTimeMs = acc.solveTimes.length > 0 ? Math.min(...acc.solveTimes) : null;
+        const slowestSolveTimeMs = acc.solveTimes.length > 0 ? Math.max(...acc.solveTimes) : null;
+
+        propStats[propId] = {
+          propId,
+          name: propNameMap[propId] || propId,
+          sessionsWithData: acc.sessionsWithData,
+          solveRate,
+          overrideRate,
+          avgSolveTimeMs,
+          fastestSolveTimeMs,
+          slowestSolveTimeMs,
+        };
+      }
+
+      // Per-step stats
+      const stepAccum = {};
+      for (const sess of sessions) {
+        if (!sess.stepDurations) continue;
+        for (const sd of sess.stepDurations) {
+          if (sd.durationMs == null) continue;
+          if (!stepAccum[sd.step]) stepAccum[sd.step] = { durations: [] };
+          stepAccum[sd.step].durations.push(sd.durationMs);
+        }
+      }
+
+      const stepStats = {};
+      for (const [step, acc] of Object.entries(stepAccum)) {
+        stepStats[step] = {
+          avgDurationMs: Math.round(acc.durations.reduce((a, b) => a + b, 0) / acc.durations.length),
+          sessionsWithData: acc.durations.length,
+        };
+      }
+
+      res.json({ summary, propStats, stepStats });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to compute stats', details: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────
   // Dashboard Config API (hints, roomDuration)
   // ─────────────────────────────────────────────────────────
 

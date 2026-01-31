@@ -87,6 +87,10 @@ export function createStateManager(config, configPath) {
       };
     },
 
+    getSessionHistory() {
+      return [...sessionHistory];
+    },
+
     // ─────────────────────────────────────────────────────────
     // Prop mutations
     // ─────────────────────────────────────────────────────────

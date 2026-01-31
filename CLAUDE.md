@@ -82,6 +82,10 @@ resumeSession()
 endSession(result, comments)
 abortSession()
 incrementHints()
+armRoom()                   // Arm props (maglocks ON, sensors stay off)
+
+// History
+getSessionHistory()         // Returns array of persisted session records
 
 // Config hot reload
 reloadConfig(newConfig)     // Updates props without restart
@@ -144,6 +148,8 @@ PUT  /api/config/sensor-types/:id  # Update sensor type
 DELETE /api/config/sensor-types/:id  # Delete sensor type
 GET  /api/config/dashboard    # Get dashboard config (hints, roomDuration)
 PUT  /api/config/dashboard    # Update dashboard config
+GET  /api/sessions            # Raw session history array
+GET  /api/stats               # Computed aggregates (summary, propStats, stepStats)
 GET  /api/export?history=true # Export room as .zip (config + media + optional history)
 POST /api/import              # Import room .zip (multipart upload, field: "archive")
 ```
@@ -271,14 +277,21 @@ npm start            # Production start
 ### sendAck Extended
 - `sendAck()` in websocket-server now accepts optional `extra` object that gets spread into the ack payload
 
+### Session Stats & History API
+- `GET /api/sessions` returns raw session history array
+- `GET /api/stats` returns computed aggregates: summary (totalSessions, winRate, avgDurationMs, avgHints), per-prop stats (solveRate, overrideRate, avg/fastest/slowest solve time), per-step avg durations
+- `getSessionHistory()` added to state-manager's public API
+- Admin UI (`admin/index.html`) includes a Statistiques section: summary cards, per-prop table, last 50 sessions list
+- Dashboard `StatsModal` fetches from these endpoints in full mode, falls back to local IndexedDB
+
 ---
 
-## Two-Phase Arm/Reset Design (Planned)
+## Two-Phase Arm/Reset Design
 
 Physical prop control follows a two-phase flow to separate room preparation from session start:
 
-### Phase 1: "Armer la salle" (Arm Room)
-- GM clicks "Armer la salle" button in dashboard (visible when no session active)
+### Phase 1: "Activer Mecas" (Arm Room)
+- GM clicks "Activer Mecas" button in dashboard (visible when no session active)
 - Dashboard sends `session_cmd: arm` via WebSocket
 - Room Controller broadcasts MQTT `arm` command to all props
 - ESP32 props: power ON maglocks (GPIO output pins via relays), sensors stay disabled
@@ -311,7 +324,7 @@ Physical prop control follows a two-phase flow to separate room preparation from
 
 ## Future Considerations
 
-- Session history query endpoint (dashboard requests past sessions)
+- ~~Session history query endpoint~~ — Done: `GET /api/sessions` + `GET /api/stats` endpoints, consumed by both admin UI and Dashboard StatsModal
 - ~~Prop auto-discovery~~ — Done: `discoverProp()` in state-manager auto-creates props from MQTT status messages, using `mqttStatus.name` for display name
 - Multi-dashboard support (already works, just broadcast)
 - Database storage instead of JSON file (for larger deployments)
