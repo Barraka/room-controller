@@ -142,6 +142,10 @@ GET  /api/config/sensor-types # List sensor types
 POST /api/config/sensor-types # Add sensor type
 PUT  /api/config/sensor-types/:id  # Update sensor type
 DELETE /api/config/sensor-types/:id  # Delete sensor type
+GET  /api/config/dashboard    # Get dashboard config (hints, roomDuration)
+PUT  /api/config/dashboard    # Update dashboard config
+GET  /api/export?history=true # Export room as .zip (config + media + optional history)
+POST /api/import              # Import room .zip (multipart upload, field: "archive")
 ```
 
 **Hot Reload**: Click "Appliquer" button after config changes to apply without restart. The admin server reloads the config, updates state manager, and broadcasts `full_state` to all connected dashboards.
@@ -168,6 +172,10 @@ DELETE /api/config/sensor-types/:id  # Delete sensor type
   },
   "admin": {
     "port": 3002
+  },
+  "dashboard": {
+    "hints": [],
+    "roomDuration": 3600
   },
   "props": [
     {
@@ -244,6 +252,16 @@ npm start            # Production start
 
 ## Recent Changes
 
+### Export / Import
+- **Export** (`GET /api/export`): Streams a `.zip` via `archiver` containing sanitized `room-config.json` (no mqtt/ports), `media-index.json`, `media/` directories, and optionally `session-history.json`
+- **Import** (`POST /api/import`): Accepts a `.zip` via multer, validates contents, merges config (preserves local network settings), replaces media, hot-reloads state. Blocked during active sessions.
+- **Dashboard config** (`GET/PUT /api/config/dashboard`): Stores `hints` and `roomDuration` in `room-config.json` so they're included in exports. Dashboard syncs these via `syncDashboardConfig()`.
+- **Dependencies**: `archiver` (export), `adm-zip` (import)
+
+### Prop Auto-Discovery with DEVICE_NAME
+- `discoverProp()` in state-manager creates props from MQTT status messages
+- Uses `mqttStatus.name` (from ESP32 `DEVICE_NAME`) as display name, falls back to `propId`
+
 ### Step Durations in Session Records
 - `endSession()` in state-manager now computes `stepDurations` — sequential per-step timing based on prop `order` grouping
 - Each entry: `{ step, durationMs, propIds }`. Step N's duration = time from previous step solved to this step solved. Unsolved steps get `durationMs: null`.
@@ -255,16 +273,45 @@ npm start            # Production start
 
 ---
 
+## Two-Phase Arm/Reset Design (Planned)
+
+Physical prop control follows a two-phase flow to separate room preparation from session start:
+
+### Phase 1: "Armer la salle" (Arm Room)
+- GM clicks "Armer la salle" button in dashboard (visible when no session active)
+- Dashboard sends `session_cmd: arm` via WebSocket
+- Room Controller broadcasts MQTT `arm` command to all props
+- ESP32 props: power ON maglocks (GPIO output pins via relays), sensors stay disabled
+- GM physically resets room (closes doors, places objects, etc.)
+
+### Phase 2: "Débuter Session" (Start Session)
+- GM clicks "Débuter Session" in dashboard
+- Dashboard sends `session_cmd: start` via WebSocket
+- Room Controller calls `startSession()` (resets logical state) + broadcasts MQTT `reset` to all props
+- ESP32 props: re-arm sensors with 2s ignore window (maglocks stay powered)
+- Timer starts
+
+### Session End
+- Only saves stats — no physical changes to props
+- Maglocks remain powered until next `arm` command cycle
+
+### Implementation Details
+- **New session_cmd**: `arm` — broadcasts `arm` MQTT command to all configured props
+- **Modified session_cmd `start`**: now also broadcasts `reset` MQTT command to all props
+- **New MQTT command**: `arm` — ESP32 powers output pins (maglocks) but does NOT re-arm sensors
+- **State tracking**: `roomArmed` boolean in state manager (informational, not blocking)
+
+---
+
 ## Known Issues / TODO
 
-- **No MQTT reset on session start**: `startSession()` resets logical prop state in state-manager, but does NOT send MQTT `reset` commands to ESP32 props. Physical props (sensors, maglocks) are not re-armed. The GM must currently reset props manually or via individual reset buttons in the dashboard.
+- ~~**No MQTT reset on session start**~~: Addressed by the two-phase arm/reset design above
 
 ---
 
 ## Future Considerations
 
-- **MQTT reset broadcast on session start** - Send `reset` command to all props when session starts
 - Session history query endpoint (dashboard requests past sessions)
-- Prop auto-discovery (new prop on MQTT → prompt to configure)
+- ~~Prop auto-discovery~~ — Done: `discoverProp()` in state-manager auto-creates props from MQTT status messages, using `mqttStatus.name` for display name
 - Multi-dashboard support (already works, just broadcast)
 - Database storage instead of JSON file (for larger deployments)

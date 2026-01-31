@@ -632,6 +632,32 @@
   <div id="propsList"></div>
   <button class="btn-primary" onclick="openAddPropModal()" style="margin-top: 10px;">+ Ajouter un Prop</button>
 
+  <!-- Export / Import -->
+  <h2>Export / Import</h2>
+  <div class="card">
+    <p style="color: #aaa; font-size: 13px; margin-bottom: 12px;">
+      Exporter la configuration et les medias de cette salle pour les importer sur un autre Room Controller.
+      Les parametres reseau (MQTT, ports) sont exclus de l'export.
+    </p>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+      <button class="btn-primary btn-small" onclick="exportRoom()">Exporter la salle</button>
+      <label style="font-size: 13px; color: #aaa; display: flex; align-items: center; gap: 6px;">
+        <input type="checkbox" id="exportHistory"> Inclure l'historique des sessions
+      </label>
+    </div>
+    <hr style="border-color: #333; margin: 12px 0;">
+    <p style="color: #fa0; font-size: 12px; margin-bottom: 8px;">
+      L'import remplacera toute la configuration et les medias actuels.
+    </p>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <input type="file" id="importFile" accept=".zip" style="width: auto; font-size: 12px;">
+      <button class="btn-secondary btn-small" onclick="importRoom()" id="importBtn">Importer</button>
+    </div>
+    <div id="importProgress" style="display: none; margin-top: 10px; color: #00d4ff; font-size: 13px;">
+      Import en cours...
+    </div>
+  </div>
+
   <!-- Edit Room Modal -->
   <div class="modal-overlay" id="editRoomModal">
     <div class="modal">
@@ -1536,6 +1562,58 @@
         }
       });
     });
+
+    // ─────────────────────────────────────────────────────────
+    // Export / Import
+    // ─────────────────────────────────────────────────────────
+
+    function exportRoom() {
+      const includeHistory = document.getElementById('exportHistory').checked;
+      const url = `/api/export${includeHistory ? '?history=true' : ''}`;
+      // Trigger browser download
+      window.location.href = url;
+    }
+
+    async function importRoom() {
+      const fileInput = document.getElementById('importFile');
+      const file = fileInput.files[0];
+      if (!file) {
+        showToast('Selectionnez un fichier .zip', true);
+        return;
+      }
+
+      if (!confirm('L\'import va remplacer la configuration et les medias actuels. Continuer ?')) return;
+
+      const progress = document.getElementById('importProgress');
+      const btn = document.getElementById('importBtn');
+      progress.style.display = 'block';
+      btn.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('archive', file);
+
+        const res = await fetch('/api/import', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(`Import termine (${data.props} props)`);
+          fileInput.value = '';
+          fetchConfig();
+          fetchState();
+        } else {
+          showToast(data.error || 'Erreur lors de l\'import', true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      } finally {
+        progress.style.display = 'none';
+        btn.disabled = false;
+      }
+    }
 
     // ─────────────────────────────────────────────────────────
     // Init

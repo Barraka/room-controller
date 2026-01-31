@@ -8,7 +8,7 @@ const HISTORY_FILE = join(__dirname, '..', 'session-history.json');
 /**
  * Creates a state manager for room, props, and sessions
  */
-export function createStateManager(config) {
+export function createStateManager(config, configPath) {
   // Initialize props from config
   const props = new Map();
   for (const propConfig of config.props) {
@@ -406,6 +406,15 @@ export function createStateManager(config) {
       return { success: true, session: this.getSession() };
     },
 
+    armRoom() {
+      if (session.active) {
+        return { success: false, error: 'Cannot arm while session is active' };
+      }
+
+      console.log('[State] Room armed');
+      return { success: true, propIds: Array.from(props.keys()) };
+    },
+
     incrementHints() {
       if (!session.active) {
         return { success: false, error: 'No active session' };
@@ -414,6 +423,59 @@ export function createStateManager(config) {
       session.hintsGiven++;
       console.log(`[State] Hint given (total: ${session.hintsGiven})`);
       return { success: true, session: this.getSession() };
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // Auto-discovery (unknown prop publishes MQTT status)
+    // ─────────────────────────────────────────────────────────
+
+    discoverProp(propId, mqttStatus) {
+      if (props.has(propId)) return null;
+
+      // Extract sensors from MQTT status payload
+      const sensors = (mqttStatus.details?.sensors || []).map(s => ({
+        sensorId: s.sensorId,
+        label: s.sensorId,
+        triggered: s.triggered || false
+      }));
+
+      const maxOrder = Math.max(0, ...Array.from(props.values()).map(p => p.order));
+
+      const newProp = {
+        propId,
+        name: mqttStatus.name || propId,
+        order: maxOrder + 1,
+        online: mqttStatus.online ?? true,
+        solved: mqttStatus.solved ?? false,
+        override: mqttStatus.override ?? false,
+        startedAt: null,
+        solvedAt: null,
+        sensors
+      };
+
+      props.set(propId, newProp);
+
+      // Persist to config file
+      if (configPath) {
+        try {
+          const diskConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+          if (!diskConfig.props.some(p => p.propId === propId)) {
+            diskConfig.props.push({
+              propId,
+              name: mqttStatus.name || propId,
+              type: '',
+              order: newProp.order,
+              sensors: sensors.map(s => ({ sensorId: s.sensorId, label: s.label }))
+            });
+            writeFileSync(configPath, JSON.stringify(diskConfig, null, 2));
+          }
+        } catch (err) {
+          console.error(`[State] Failed to persist discovered prop ${propId}:`, err.message);
+        }
+      }
+
+      console.log(`[State] Discovered new prop: ${propId} (order=${newProp.order}, sensors=${sensors.length})`);
+      return newProp;
     },
 
     // ─────────────────────────────────────────────────────────

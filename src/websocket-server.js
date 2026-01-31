@@ -173,8 +173,20 @@ export function createWebSocketServer(config, stateManager) {
 
     let result;
     switch (command) {
+      case 'arm':
+        result = stateManager.armRoom();
+        if (result.success && mqttClient) {
+          mqttClient.sendCommandAll('arm', result.propIds);
+        }
+        break;
+
       case 'start':
         result = stateManager.startSession();
+        // Broadcast MQTT reset to all props to re-arm sensors
+        if (result.success && mqttClient) {
+          const propIds = stateManager.getProps().map(p => p.propId);
+          mqttClient.sendCommandAll('reset', propIds);
+        }
         break;
 
       case 'pause':

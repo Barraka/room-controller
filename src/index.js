@@ -20,7 +20,7 @@ try {
 }
 
 // Initialize state manager
-const stateManager = createStateManager(config);
+const stateManager = createStateManager(config, configPath);
 
 // Initialize WebSocket server
 const wsServer = createWebSocketServer(config, stateManager);

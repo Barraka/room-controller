@@ -14,6 +14,10 @@
   "admin": {
     "port": 3002
   },
+  "dashboard": {
+    "hints": [],
+    "roomDuration": 3600
+  },
   "sensorTypes": [
     {
       "id": "rfid",

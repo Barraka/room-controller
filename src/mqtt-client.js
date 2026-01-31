@@ -82,6 +82,16 @@ export function createMqttClient(config, stateManager, wsServer) {
     if (payload.type !== 'status') return;
 
     const update = stateManager.updatePropFromMqtt(propId, payload);
+
+    // Unknown prop → auto-discover from its first status message
+    if (!update && !stateManager.getProp(propId)) {
+      const discovered = stateManager.discoverProp(propId, payload);
+      if (discovered) {
+        wsServer.broadcastFullState();
+        return;
+      }
+    }
+
     if (update) {
       // Broadcast to all connected dashboards
       wsServer.broadcast({
@@ -131,6 +141,10 @@ export function createMqttClient(config, stateManager, wsServer) {
    */
   function handleLwt(propId, payload) {
     const online = payload.online === true;
+
+    // Skip LWT for unknown props (status message handles discovery)
+    if (!stateManager.getProp(propId)) return;
+
     const update = stateManager.setPropOnline(propId, online);
 
     if (update) {
@@ -184,6 +198,17 @@ export function createMqttClient(config, stateManager, wsServer) {
 
     sendTriggerSensor(propId, sensorId) {
       return sendCommand(propId, 'set_output', { sensorId, value: true });
+    },
+
+    sendArm(propId) {
+      return sendCommand(propId, 'arm');
+    },
+
+    // Send a command to all configured props
+    sendCommandAll(command, propIds) {
+      for (const propId of propIds) {
+        sendCommand(propId, command);
+      }
     }
   };
 }
