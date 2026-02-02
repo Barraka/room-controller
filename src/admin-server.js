@@ -30,7 +30,7 @@ function writeMediaIndex(index) {
 /**
  * Creates an Express server for admin configuration UI
  */
-export function createAdminServer(port, stateManager) {
+export function createAdminServer(port, stateManager, scenarioEngine = null) {
   const app = express();
 
   // WebSocket server reference (set after initialization)
@@ -243,6 +243,11 @@ export function createAdminServer(port, stateManager) {
       const result = stateManager.reloadConfig(config);
 
       if (result.success) {
+        // Reload scenarios
+        if (scenarioEngine && config.scenarios) {
+          scenarioEngine.reloadScenarios(config.scenarios);
+        }
+
         // Broadcast updated state to all connected dashboards
         if (wsServer) {
           wsServer.broadcastFullState();
@@ -561,6 +566,92 @@ export function createAdminServer(port, stateManager) {
   });
 
   // ─────────────────────────────────────────────────────────
+  // Scenarios API
+  // ─────────────────────────────────────────────────────────
+
+  // Get all scenarios
+  app.get('/api/config/scenarios', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      res.json(config.scenarios || []);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to read scenarios', details: err.message });
+    }
+  });
+
+  // Add a new scenario
+  app.post('/api/config/scenarios', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      if (!config.scenarios) config.scenarios = [];
+
+      const scenario = req.body;
+      if (!scenario.name || !scenario.trigger) {
+        return res.status(400).json({ error: 'name and trigger are required' });
+      }
+
+      scenario.id = `sc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      if (scenario.enabled === undefined) scenario.enabled = true;
+      if (!scenario.actions) scenario.actions = [];
+
+      config.scenarios.push(scenario);
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+      if (scenarioEngine) scenarioEngine.reloadScenarios(config.scenarios);
+
+      res.json({ success: true, scenario });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to add scenario', details: err.message });
+    }
+  });
+
+  // Update a scenario
+  app.put('/api/config/scenarios/:id', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      if (!config.scenarios) return res.status(404).json({ error: 'Scenario not found' });
+
+      const idx = config.scenarios.findIndex(s => s.id === req.params.id);
+      if (idx === -1) return res.status(404).json({ error: 'Scenario not found' });
+
+      const updates = req.body;
+      const scenario = config.scenarios[idx];
+      if (updates.name !== undefined) scenario.name = updates.name;
+      if (updates.enabled !== undefined) scenario.enabled = updates.enabled;
+      if (updates.trigger !== undefined) scenario.trigger = updates.trigger;
+      if (updates.actions !== undefined) scenario.actions = updates.actions;
+
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+      if (scenarioEngine) scenarioEngine.reloadScenarios(config.scenarios);
+
+      res.json({ success: true, scenario });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update scenario', details: err.message });
+    }
+  });
+
+  // Delete a scenario
+  app.delete('/api/config/scenarios/:id', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      if (!config.scenarios) return res.status(404).json({ error: 'Scenario not found' });
+
+      const idx = config.scenarios.findIndex(s => s.id === req.params.id);
+      if (idx === -1) return res.status(404).json({ error: 'Scenario not found' });
+
+      config.scenarios.splice(idx, 1);
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+      if (scenarioEngine) scenarioEngine.reloadScenarios(config.scenarios);
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete scenario', details: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────
   // Session History & Stats API
   // ─────────────────────────────────────────────────────────
 
@@ -832,6 +923,9 @@ export function createAdminServer(port, stateManager) {
 
       // Hot reload
       stateManager.reloadConfig(mergedConfig);
+      if (scenarioEngine && mergedConfig.scenarios) {
+        scenarioEngine.reloadScenarios(mergedConfig.scenarios);
+      }
       if (wsServer) wsServer.broadcastFullState();
 
       console.log(`[Admin] Import complete: ${mergedConfig.props.length} props, media replaced`);

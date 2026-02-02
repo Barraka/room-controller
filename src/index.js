@@ -5,6 +5,7 @@ import { createMqttClient } from './mqtt-client.js';
 import { createWebSocketServer } from './websocket-server.js';
 import { createStateManager } from './state-manager.js';
 import { createAdminServer } from './admin-server.js';
+import { createScenarioEngine } from './scenario-engine.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -31,9 +32,12 @@ const mqttClient = createMqttClient(config, stateManager, wsServer);
 // Wire up MQTT client to WebSocket server (for sending commands)
 wsServer.setMqttClient(mqttClient);
 
+// Initialize Scenario Engine
+const scenarioEngine = createScenarioEngine(config, stateManager, mqttClient, wsServer);
+
 // Initialize Admin server
 const adminPort = config.admin?.port || 3002;
-const adminServer = createAdminServer(adminPort, stateManager);
+const adminServer = createAdminServer(adminPort, stateManager, scenarioEngine);
 
 // Wire up WebSocket server to Admin server (for config reload broadcasts)
 adminServer.setWsServer(wsServer);

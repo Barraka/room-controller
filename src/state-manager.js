@@ -9,6 +9,16 @@ const HISTORY_FILE = join(__dirname, '..', 'session-history.json');
  * Creates a state manager for room, props, and sessions
  */
 export function createStateManager(config, configPath) {
+  // Event listeners
+  const listeners = [];
+  function emit(event, data) {
+    for (const fn of listeners) {
+      try { fn(event, data); } catch (err) {
+        console.error(`[State] Event listener error (${event}):`, err.message);
+      }
+    }
+  }
+
   // Initialize props from config
   const props = new Map();
   for (const propConfig of config.props) {
@@ -132,6 +142,7 @@ export function createStateManager(config, configPath) {
         if (prop.solved && !wasSolved) {
           prop.solvedAt = now;
           changes.solvedAt = prop.solvedAt;
+          emit('prop_solved', { propId, timestamp: now });
         } else if (!prop.solved && wasSolved) {
           // Reset
           prop.solvedAt = null;
@@ -153,6 +164,11 @@ export function createStateManager(config, configPath) {
           if (sensor && sensorUpdate.triggered !== undefined) {
             const wasTriggered = sensor.triggered;
             sensor.triggered = sensorUpdate.triggered;
+
+            // Emit sensor triggered event
+            if (sensor.triggered && !wasTriggered) {
+              emit('sensor_triggered', { propId, sensorId: sensor.sensorId, timestamp: now });
+            }
 
             // Track first interaction with prop
             if (sensor.triggered && !wasTriggered && !prop.startedAt && session.active) {
@@ -193,6 +209,7 @@ export function createStateManager(config, configPath) {
         changes.solved = true;
         changes.solvedAt = now;
         changes.override = true;
+        emit('prop_solved', { propId, timestamp: now });
       }
 
       return { success: true, changes };
@@ -281,6 +298,7 @@ export function createStateManager(config, configPath) {
       }
 
       console.log('[State] Session started');
+      emit('session_started', { timestamp: now });
       return { success: true, session: this.getSession() };
     },
 
@@ -389,6 +407,7 @@ export function createStateManager(config, configPath) {
       saveHistory();
 
       console.log(`[State] Session ended: ${result} (${Math.round(realDurationMs / 1000)}s)`);
+      emit('session_ended', { result, timestamp: now });
       return { success: true, sessionRecord };
     },
 
@@ -485,6 +504,11 @@ export function createStateManager(config, configPath) {
     // ─────────────────────────────────────────────────────────
     // Config reload (hot reload without restart)
     // ─────────────────────────────────────────────────────────
+
+    // Subscribe to state events (used by scenario engine)
+    onEvent(fn) {
+      listeners.push(fn);
+    },
 
     reloadConfig(newConfig) {
       // Update room info

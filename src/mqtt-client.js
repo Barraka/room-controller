@@ -187,6 +187,9 @@ export function createMqttClient(config, stateManager, wsServer) {
     // Original mqtt client methods
     end: () => client.end(),
 
+    // Generic command (used by scenario engine)
+    sendCommand,
+
     // Command methods
     sendForceSolve(propId) {
       return sendCommand(propId, 'force_solve');

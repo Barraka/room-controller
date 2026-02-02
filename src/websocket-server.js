@@ -269,6 +269,15 @@ export function createWebSocketServer(config, stateManager) {
     // Broadcast to all clients
     broadcast,
 
+    // Broadcast automation command to all clients (used by scenario engine)
+    broadcastAutomation(payload) {
+      broadcast({
+        type: 'automation',
+        timestamp: Date.now(),
+        payload
+      });
+    },
+
     // Broadcast full state to all clients (used after config reload)
     broadcastFullState() {
       console.log('[WS] Broadcasting full state to all dashboards');

@@ -560,6 +560,108 @@
     .card[draggable="true"]:hover .drag-handle {
       color: #00d4ff;
     }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #333;
+      margin-bottom: 20px;
+      position: sticky;
+      top: 0;
+      background: #1a1a2e;
+      z-index: 50;
+      padding: 8px 0 0;
+    }
+
+    .tab {
+      padding: 8px 20px;
+      background: transparent;
+      color: #888;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab:hover {
+      color: #ccc;
+    }
+
+    .tab.active {
+      color: #00d4ff;
+      border-bottom-color: #00d4ff;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Audio tab */
+    .media-upload-area {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .media-upload-area .form-group {
+      margin-bottom: 0;
+    }
+
+    .media-table {
+      width: 100%;
+      font-size: 13px;
+      border-collapse: collapse;
+    }
+
+    .media-table th {
+      text-align: left;
+      padding: 8px;
+      color: #888;
+      border-bottom: 1px solid #333;
+      font-size: 12px;
+    }
+
+    .media-table td {
+      padding: 8px;
+      border-bottom: 1px solid #2a2a2a;
+      vertical-align: middle;
+    }
+
+    .media-table tr:hover {
+      background: #2a2a45;
+    }
+
+    .media-preview-btn {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #333;
+      color: #00d4ff;
+      border-radius: 50%;
+      font-size: 14px;
+    }
+
+    .role-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #a78bfa33;
+      color: #a78bfa;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -573,6 +675,17 @@
     <button class="btn-primary btn-small" onclick="reloadConfig()">Appliquer</button>
     <button class="btn-secondary btn-small" onclick="location.reload()">Rafraichir</button>
   </div>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="general">General</button>
+    <button class="tab" data-tab="props">Props</button>
+    <button class="tab" data-tab="automatismes">Automatismes</button>
+    <button class="tab" data-tab="audio">Audio</button>
+    <button class="tab" data-tab="stats">Statistiques</button>
+  </div>
+
+  <!-- ═══ TAB: General ═══ -->
+  <div class="tab-panel active" id="tab-general">
 
   <!-- Room Info -->
   <h2>Salle</h2>
@@ -627,11 +740,6 @@
     </div>
   </div>
 
-  <!-- Props -->
-  <h2>Props</h2>
-  <div id="propsList"></div>
-  <button class="btn-primary" onclick="openAddPropModal()" style="margin-top: 10px;">+ Ajouter un Prop</button>
-
   <!-- Export / Import -->
   <h2>Export / Import</h2>
   <div class="card">
@@ -657,6 +765,84 @@
       Import en cours...
     </div>
   </div>
+
+  </div><!-- /tab-general -->
+
+  <!-- ═══ TAB: Props ═══ -->
+  <div class="tab-panel" id="tab-props">
+  <h2>Props</h2>
+  <div id="propsList"></div>
+  <button class="btn-primary" onclick="openAddPropModal()" style="margin-top: 10px;">+ Ajouter un Prop</button>
+  </div><!-- /tab-props -->
+
+  <!-- ═══ TAB: Automatismes ═══ -->
+  <div class="tab-panel" id="tab-automatismes">
+  <h2>Automatismes</h2>
+  <div id="scenariosList"></div>
+  <button class="btn-primary" onclick="openAddScenarioModal()" style="margin-top: 10px;">+ Ajouter un Automatisme</button>
+  </div><!-- /tab-automatismes -->
+
+  <!-- ═══ TAB: Audio ═══ -->
+  <div class="tab-panel" id="tab-audio">
+  <h2>Audio</h2>
+  <div class="card">
+    <h3 style="font-size: 14px; color: #ccc; margin-bottom: 12px;">Importer un fichier audio</h3>
+    <div class="media-upload-area">
+      <div class="form-group">
+        <label>Fichier</label>
+        <input type="file" id="mediaFile" accept="audio/*" style="width: auto; font-size: 12px;">
+      </div>
+      <div class="form-group">
+        <label>Nom</label>
+        <input type="text" id="mediaName" placeholder="Nom du son" style="width: 200px;">
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="mediaType" style="width: 150px;">
+          <option value="effect">Effet sonore</option>
+          <option value="music">Musique</option>
+        </select>
+      </div>
+      <button class="btn-primary btn-small" onclick="uploadMedia()">Importer</button>
+    </div>
+  </div>
+
+  <h3 style="color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px;">Effets sonores</h3>
+  <div class="card">
+    <table class="media-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Nom</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="effectsList"></tbody>
+    </table>
+    <div id="effectsEmpty" class="empty-state" style="display:none;">Aucun effet sonore</div>
+  </div>
+
+  <h3 style="color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px;">Musiques</h3>
+  <div class="card">
+    <table class="media-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Nom</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="musicList"></tbody>
+    </table>
+    <div id="musicEmpty" class="empty-state" style="display:none;">Aucune musique</div>
+  </div>
+  <audio id="mediaPreviewAudio" style="display:none;"></audio>
+  </div><!-- /tab-audio -->
+
+  <!-- ═══ TAB: Stats ═══ -->
+  <div class="tab-panel" id="tab-stats">
 
   <!-- Statistiques -->
   <h2>Statistiques</h2>
@@ -702,6 +888,67 @@
   <div class="card" id="sessionListCard" style="display: none;">
     <h3 style="margin-bottom: 10px; font-size: 14px; color: #ccc;">Historique des sessions</h3>
     <div id="sessionListAdmin" style="max-height: 400px; overflow-y: auto;"></div>
+  </div>
+  </div><!-- /tab-stats -->
+
+  <!-- ════════ MODALS (outside tabs) ════════ -->
+
+  <!-- Add/Edit Scenario Modal -->
+  <div class="modal-overlay" id="scenarioModal">
+    <div class="modal" style="max-width: 600px;">
+      <h3 id="scenarioModalTitle">Ajouter un Automatisme</h3>
+      <form id="scenarioForm">
+        <input type="hidden" id="scenarioEditMode" value="add">
+        <input type="hidden" id="scenarioId">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="scenarioName" placeholder="Ex: Son apres coffre ouvert" required>
+        </div>
+        <div class="form-group">
+          <label>Actif</label>
+          <select id="scenarioEnabled">
+            <option value="true">Oui</option>
+            <option value="false">Non</option>
+          </select>
+        </div>
+
+        <h4 style="color: #00d4ff; margin: 16px 0 8px; font-size: 13px;">DECLENCHEUR</h4>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="scenarioTriggerType" onchange="onTriggerTypeChange()">
+            <option value="prop_solved">Enigme resolue</option>
+            <option value="sensor_triggered">Capteur declenche</option>
+            <option value="timer">Temps ecoule</option>
+            <option value="session_start">Debut de session</option>
+            <option value="session_end">Fin de session</option>
+          </select>
+        </div>
+        <div class="form-group" id="triggerPropGroup">
+          <label>Prop</label>
+          <select id="scenarioTriggerPropId"></select>
+        </div>
+        <div class="form-group" id="triggerSensorGroup" style="display:none;">
+          <label>Capteur</label>
+          <select id="scenarioTriggerSensorId"></select>
+        </div>
+        <div class="form-group" id="triggerTimerGroup" style="display:none;">
+          <label>Temps ecoule (minutes:secondes)</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="scenarioTriggerMinutes" min="0" max="180" value="0" style="width:80px;"> min
+            <input type="number" id="scenarioTriggerSeconds" min="0" max="59" value="0" style="width:80px;"> sec
+          </div>
+        </div>
+
+        <h4 style="color: #00d4ff; margin: 16px 0 8px; font-size: 13px;">ACTIONS</h4>
+        <div id="scenarioActionsList"></div>
+        <button type="button" class="add-sensor-btn" onclick="addScenarioAction()" style="margin-top:8px;">+ Ajouter une action</button>
+
+        <div class="actions" style="margin-top: 16px;">
+          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('scenarioModal')">Annuler</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Edit Room Modal -->
@@ -875,6 +1122,7 @@
 
       renderSensorTypes();
       renderProps();
+      renderScenarios();
     }
 
     function renderSensorTypes() {
@@ -1734,12 +1982,525 @@
     }
 
     // ─────────────────────────────────────────────────────────
+    // Scenarios
+    // ─────────────────────────────────────────────────────────
+
+    function renderScenarios() {
+      const container = document.getElementById('scenariosList');
+      const scenarios = config.scenarios || [];
+
+      if (scenarios.length === 0) {
+        container.innerHTML = '<div class="empty-state">Aucun automatisme configure</div>';
+        return;
+      }
+
+      container.innerHTML = scenarios.map(sc => {
+        const triggerLabel = formatTriggerLabel(sc.trigger);
+        const actionsLabel = (sc.actions || []).map(a => formatActionLabel(a)).join(', ');
+        const enabledBadge = sc.enabled
+          ? '<span class="status-badge" style="font-size:11px;">Actif</span>'
+          : '<span class="status-badge offline" style="font-size:11px;">Inactif</span>';
+
+        return `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <span class="card-title">${sc.name}</span>
+                ${enabledBadge}
+              </div>
+            </div>
+            <div style="font-size:12px;color:#aaa;margin-bottom:4px;">
+              <strong style="color:#00d4ff;">Declencheur:</strong> ${triggerLabel}
+            </div>
+            <div style="font-size:12px;color:#aaa;">
+              <strong style="color:#fa0;">Actions:</strong> ${actionsLabel || 'Aucune'}
+            </div>
+            <div class="actions">
+              <button class="btn-secondary btn-small" onclick="openEditScenarioModal('${sc.id}')">Modifier</button>
+              <button class="btn-small" style="background:#${sc.enabled ? 'a52' : '2a5'};color:#fff;" onclick="toggleScenario('${sc.id}', ${!sc.enabled})">${sc.enabled ? 'Desactiver' : 'Activer'}</button>
+              <button class="btn-danger btn-small" onclick="deleteScenario('${sc.id}')">Supprimer</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function formatTriggerLabel(trigger) {
+      if (!trigger) return '?';
+      switch (trigger.type) {
+        case 'prop_solved': {
+          const p = config.props.find(p => p.propId === trigger.propId);
+          return `Enigme resolue: ${p?.name || trigger.propId}`;
+        }
+        case 'sensor_triggered': {
+          const p = config.props.find(p => p.propId === trigger.propId);
+          const s = p?.sensors?.find(s => s.sensorId === trigger.sensorId);
+          return `Capteur: ${p?.name || trigger.propId} → ${s?.label || trigger.sensorId}`;
+        }
+        case 'timer': {
+          const totalSec = Math.round((trigger.atElapsedMs || 0) / 1000);
+          const m = Math.floor(totalSec / 60);
+          const s = totalSec % 60;
+          return `Apres ${m}m${s > 0 ? s + 's' : ''}`;
+        }
+        case 'session_start': return 'Debut de session';
+        case 'session_end': return 'Fin de session';
+        default: return trigger.type;
+      }
+    }
+
+    function formatActionLabel(action) {
+      switch (action.type) {
+        case 'play_audio': return `Son: ${action.file}${action.delay ? ' (+' + action.delay + 'ms)' : ''}`;
+        case 'play_music': return `Musique: ${action.file}${action.delay ? ' (+' + action.delay + 'ms)' : ''}`;
+        case 'stop_music': return 'Stop musique';
+        case 'mqtt_cmd': return `MQTT: ${action.propId} → ${action.command}`;
+        default: return action.type;
+      }
+    }
+
+    function populateScenarioPropDropdown(selectedPropId = '') {
+      const dropdown = document.getElementById('scenarioTriggerPropId');
+      dropdown.innerHTML = (config.props || []).map(p =>
+        `<option value="${p.propId}" ${p.propId === selectedPropId ? 'selected' : ''}>${p.name} (${p.propId})</option>`
+      ).join('');
+      populateScenarioSensorDropdown(selectedPropId);
+    }
+
+    function populateScenarioSensorDropdown(propId, selectedSensorId = '') {
+      const dropdown = document.getElementById('scenarioTriggerSensorId');
+      const prop = (config.props || []).find(p => p.propId === propId);
+      const sensors = prop?.sensors || [];
+      dropdown.innerHTML = sensors.map(s =>
+        `<option value="${s.sensorId}" ${s.sensorId === selectedSensorId ? 'selected' : ''}>${s.label} (${s.sensorId})</option>`
+      ).join('');
+    }
+
+    // Update sensor dropdown when prop changes
+    document.getElementById('scenarioTriggerPropId')?.addEventListener('change', function() {
+      populateScenarioSensorDropdown(this.value);
+    });
+
+    function onTriggerTypeChange() {
+      const type = document.getElementById('scenarioTriggerType').value;
+      document.getElementById('triggerPropGroup').style.display = ['prop_solved', 'sensor_triggered'].includes(type) ? '' : 'none';
+      document.getElementById('triggerSensorGroup').style.display = type === 'sensor_triggered' ? '' : 'none';
+      document.getElementById('triggerTimerGroup').style.display = type === 'timer' ? '' : 'none';
+    }
+
+    let scenarioActions = [];
+    let scenarioMediaFiles = []; // { name, filename, type } from /api/media/sounds
+
+    async function fetchScenarioMedia() {
+      try {
+        const res = await fetch('/api/media/sounds');
+        scenarioMediaFiles = await res.json();
+      } catch {
+        scenarioMediaFiles = [];
+      }
+    }
+
+    function buildFileOptions(actionType, selectedFile) {
+      const filterType = actionType === 'play_music' ? 'music' : 'effect';
+      const files = scenarioMediaFiles.filter(f => f.type === filterType);
+      if (files.length === 0) {
+        return '<option value="">-- Aucun fichier --</option>';
+      }
+      return '<option value="">-- Choisir --</option>' +
+        files.map(f => `<option value="${f.filename}" ${f.filename === selectedFile ? 'selected' : ''}>${f.name}</option>`).join('');
+    }
+
+    function renderScenarioActions() {
+      const container = document.getElementById('scenarioActionsList');
+      if (scenarioActions.length === 0) {
+        container.innerHTML = '<div style="color:#666;font-size:12px;padding:8px;">Aucune action</div>';
+        return;
+      }
+      container.innerHTML = scenarioActions.map((a, i) => `
+        <div class="sensor-editor" style="margin-bottom:6px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select onchange="updateScenarioAction(${i}, 'type', this.value)" style="width:150px;">
+              <option value="play_audio" ${a.type === 'play_audio' ? 'selected' : ''}>Jouer un son</option>
+              <option value="play_music" ${a.type === 'play_music' ? 'selected' : ''}>Jouer musique</option>
+              <option value="stop_music" ${a.type === 'stop_music' ? 'selected' : ''}>Stop musique</option>
+              <option value="mqtt_cmd" ${a.type === 'mqtt_cmd' ? 'selected' : ''}>Commande MQTT</option>
+            </select>
+            ${['play_audio', 'play_music'].includes(a.type) ? `
+              <select onchange="updateScenarioAction(${i}, 'file', this.value)" style="width:200px;">
+                ${buildFileOptions(a.type, a.file)}
+              </select>
+            ` : ''}
+            ${a.type === 'mqtt_cmd' ? `
+              <select onchange="updateScenarioAction(${i}, 'propId', this.value)" style="width:150px;">
+                ${(config.props || []).map(p => `<option value="${p.propId}" ${p.propId === a.propId ? 'selected' : ''}>${p.name}</option>`).join('')}
+              </select>
+              <input type="text" value="${a.command || ''}" placeholder="commande" style="width:120px;"
+                     onchange="updateScenarioAction(${i}, 'command', this.value)">
+            ` : ''}
+            <div style="display:flex;align-items:center;gap:4px;">
+              <label style="font-size:11px;color:#888;">Delai ms:</label>
+              <input type="number" value="${a.delay || 0}" min="0" step="100" style="width:80px;"
+                     onchange="updateScenarioAction(${i}, 'delay', parseInt(this.value))">
+            </div>
+            <button type="button" class="btn-danger btn-icon btn-small" onclick="removeScenarioAction(${i})">×</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addScenarioAction() {
+      scenarioActions.push({ type: 'play_audio', file: '', delay: 0 });
+      renderScenarioActions();
+    }
+
+    function removeScenarioAction(index) {
+      scenarioActions.splice(index, 1);
+      renderScenarioActions();
+    }
+
+    function updateScenarioAction(index, field, value) {
+      scenarioActions[index][field] = value;
+      // Re-render if type changed (different fields needed)
+      if (field === 'type') renderScenarioActions();
+    }
+
+    async function openAddScenarioModal() {
+      await fetchScenarioMedia();
+      document.getElementById('scenarioModalTitle').textContent = 'Ajouter un Automatisme';
+      document.getElementById('scenarioEditMode').value = 'add';
+      document.getElementById('scenarioId').value = '';
+      document.getElementById('scenarioName').value = '';
+      document.getElementById('scenarioEnabled').value = 'true';
+      document.getElementById('scenarioTriggerType').value = 'prop_solved';
+      document.getElementById('scenarioTriggerMinutes').value = '0';
+      document.getElementById('scenarioTriggerSeconds').value = '0';
+      populateScenarioPropDropdown();
+      onTriggerTypeChange();
+      scenarioActions = [];
+      renderScenarioActions();
+      openModal('scenarioModal');
+    }
+
+    async function openEditScenarioModal(id) {
+      await fetchScenarioMedia();
+      const sc = (config.scenarios || []).find(s => s.id === id);
+      if (!sc) return;
+
+      document.getElementById('scenarioModalTitle').textContent = 'Modifier l\'Automatisme';
+      document.getElementById('scenarioEditMode').value = 'edit';
+      document.getElementById('scenarioId').value = sc.id;
+      document.getElementById('scenarioName').value = sc.name;
+      document.getElementById('scenarioEnabled').value = sc.enabled ? 'true' : 'false';
+      document.getElementById('scenarioTriggerType').value = sc.trigger?.type || 'prop_solved';
+
+      populateScenarioPropDropdown(sc.trigger?.propId || '');
+      if (sc.trigger?.sensorId) {
+        populateScenarioSensorDropdown(sc.trigger.propId, sc.trigger.sensorId);
+      }
+
+      if (sc.trigger?.type === 'timer') {
+        const totalSec = Math.round((sc.trigger.atElapsedMs || 0) / 1000);
+        document.getElementById('scenarioTriggerMinutes').value = Math.floor(totalSec / 60);
+        document.getElementById('scenarioTriggerSeconds').value = totalSec % 60;
+      }
+
+      onTriggerTypeChange();
+      scenarioActions = (sc.actions || []).map(a => ({ ...a }));
+      renderScenarioActions();
+      openModal('scenarioModal');
+    }
+
+    document.getElementById('scenarioForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const mode = document.getElementById('scenarioEditMode').value;
+      const id = document.getElementById('scenarioId').value;
+      const triggerType = document.getElementById('scenarioTriggerType').value;
+
+      const trigger = { type: triggerType };
+      if (['prop_solved', 'sensor_triggered'].includes(triggerType)) {
+        trigger.propId = document.getElementById('scenarioTriggerPropId').value;
+      }
+      if (triggerType === 'sensor_triggered') {
+        trigger.sensorId = document.getElementById('scenarioTriggerSensorId').value;
+      }
+      if (triggerType === 'timer') {
+        const mins = parseInt(document.getElementById('scenarioTriggerMinutes').value) || 0;
+        const secs = parseInt(document.getElementById('scenarioTriggerSeconds').value) || 0;
+        trigger.atElapsedMs = (mins * 60 + secs) * 1000;
+      }
+
+      const body = {
+        name: document.getElementById('scenarioName').value.trim(),
+        enabled: document.getElementById('scenarioEnabled').value === 'true',
+        trigger,
+        actions: scenarioActions
+      };
+
+      try {
+        let res;
+        if (mode === 'add') {
+          res = await fetch('/api/config/scenarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+        } else {
+          res = await fetch(`/api/config/scenarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(mode === 'add' ? 'Automatisme ajoute' : 'Automatisme mis a jour');
+          closeModal('scenarioModal');
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    });
+
+    async function toggleScenario(id, enabled) {
+      try {
+        const res = await fetch(`/api/config/scenarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(enabled ? 'Automatisme active' : 'Automatisme desactive');
+          fetchConfig();
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    async function deleteScenario(id) {
+      if (!confirm('Supprimer cet automatisme ?')) return;
+      try {
+        const res = await fetch(`/api/config/scenarios/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Automatisme supprime');
+          fetchConfig();
+        } else {
+          showToast(data.error, true);
+        }
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Init
+    // ─────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────
+    // Tabs
+    // ─────────────────────────────────────────────────────────
+
+    document.querySelectorAll('.tab-bar .tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+        // Lazy-load data for specific tabs
+        if (btn.dataset.tab === 'audio') fetchMediaList();
+        if (btn.dataset.tab === 'stats') fetchStats();
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // Audio / Media
+    // ─────────────────────────────────────────────────────────
+
+    let mediaItems = [];
+    let currentPreviewAudio = null;
+
+    async function fetchMediaList() {
+      try {
+        const res = await fetch('/api/media/sounds');
+        mediaItems = await res.json();
+        renderMediaLists();
+      } catch (err) {
+        console.error('Failed to fetch media:', err);
+      }
+    }
+
+    function renderMediaLists() {
+      const effects = mediaItems.filter(s => !s.type || s.type === 'effect');
+      const music = mediaItems.filter(s => s.type === 'music');
+
+      renderMediaTable('effectsList', 'effectsEmpty', effects);
+      renderMediaTable('musicList', 'musicEmpty', music);
+    }
+
+    function renderMediaTable(tbodyId, emptyId, items) {
+      const tbody = document.getElementById(tbodyId);
+      const empty = document.getElementById(emptyId);
+
+      if (items.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = '';
+        return;
+      }
+
+      empty.style.display = 'none';
+      const subfolder = tbodyId === 'musicList' ? 'music' : 'effects';
+
+      tbody.innerHTML = items.map(s => {
+        const roleBadge = s.role ? `<span class="role-badge">${s.role}</span>` : '';
+        return `
+          <tr>
+            <td>
+              <button class="media-preview-btn" onclick="togglePreview('/media/${subfolder}/${s.filename}', this)" title="Ecouter">&#9654;</button>
+            </td>
+            <td>${s.name}${roleBadge}</td>
+            <td>
+              <select onchange="setMediaRole('${s.key}', this.value)" style="font-size:12px;padding:4px;background:#1a1a2e;color:#ccc;border:1px solid #444;border-radius:4px;">
+                <option value="" ${!s.role ? 'selected' : ''}>Aucun</option>
+                <option value="victory" ${s.role === 'victory' ? 'selected' : ''}>Victoire</option>
+                <option value="defeat" ${s.role === 'defeat' ? 'selected' : ''}>Defaite</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn-secondary btn-small" onclick="promptRenameMedia('${s.key}', '${s.name.replace(/'/g, "\\'")}')">Renommer</button>
+              <button class="btn-danger btn-small" onclick="confirmDeleteMedia('${s.key}', '${s.name.replace(/'/g, "\\'")}')">Supprimer</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function togglePreview(url, btn) {
+      const audio = document.getElementById('mediaPreviewAudio');
+
+      if (currentPreviewAudio === url && !audio.paused) {
+        audio.pause();
+        audio.currentTime = 0;
+        currentPreviewAudio = null;
+        btn.innerHTML = '&#9654;';
+        return;
+      }
+
+      // Reset all play buttons
+      document.querySelectorAll('.media-preview-btn').forEach(b => b.innerHTML = '&#9654;');
+
+      audio.src = url;
+      audio.play();
+      currentPreviewAudio = url;
+      btn.innerHTML = '&#9632;';
+
+      audio.onended = () => {
+        btn.innerHTML = '&#9654;';
+        currentPreviewAudio = null;
+      };
+    }
+
+    async function uploadMedia() {
+      const fileInput = document.getElementById('mediaFile');
+      const nameInput = document.getElementById('mediaName');
+      const typeSelect = document.getElementById('mediaType');
+
+      const file = fileInput.files[0];
+      if (!file) {
+        showToast('Selectionnez un fichier audio', true);
+        return;
+      }
+
+      const name = nameInput.value.trim() || file.name.replace(/\.[^.]+$/, '');
+
+      const form = new FormData();
+      form.append('name', name);
+      form.append('type', typeSelect.value);
+      form.append('file', file);
+
+      try {
+        const res = await fetch('/api/media/sounds', { method: 'POST', body: form });
+        if (!res.ok) throw new Error('Upload failed');
+        showToast('Audio importe');
+        fileInput.value = '';
+        nameInput.value = '';
+        fetchMediaList();
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    function promptRenameMedia(key, currentName) {
+      const newName = prompt('Nouveau nom:', currentName);
+      if (newName && newName !== currentName) {
+        renameMedia(key, newName);
+      }
+    }
+
+    async function renameMedia(key, newName) {
+      try {
+        const res = await fetch(`/api/media/sounds/${key}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName })
+        });
+        const data = await res.json();
+        if (data.error === 'Name already taken') {
+          showToast('Ce nom est deja utilise', true);
+          return;
+        }
+        if (!res.ok) throw new Error(data.error || 'Rename failed');
+        showToast('Audio renomme');
+        fetchMediaList();
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    function confirmDeleteMedia(key, name) {
+      if (!confirm(`Supprimer "${name}" ?`)) return;
+      deleteMedia(key);
+    }
+
+    async function deleteMedia(key) {
+      try {
+        const res = await fetch(`/api/media/sounds/${key}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        showToast('Audio supprime');
+        fetchMediaList();
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    async function setMediaRole(key, role) {
+      try {
+        const res = await fetch(`/api/media/sounds/${key}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: role || null })
+        });
+        if (!res.ok) throw new Error('Failed to set role');
+        showToast('Role mis a jour');
+        fetchMediaList();
+      } catch (err) {
+        showToast('Erreur: ' + err.message, true);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
     // Init
     // ─────────────────────────────────────────────────────────
 
     fetchConfig();
     fetchState();
-    fetchStats();
     setInterval(fetchState, 5000); // Poll state every 5s
   </script>
 </body>

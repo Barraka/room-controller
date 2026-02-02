@@ -316,6 +316,97 @@ Physical prop control follows a two-phase flow to separate room preparation from
 
 ---
 
+## Scenario Engine (Automation)
+
+Event-driven automation system that reacts to game events and triggers actions.
+
+### Architecture
+- **`src/scenario-engine.js`**: Listens to state-manager events, evaluates triggers, executes actions
+- **Scenarios stored in**: `room-config.json` under `scenarios` array
+- **Admin UI**: Full CRUD editor in "Automatismes" tab of admin panel (renamed from "Scenarios" to avoid confusion with the room's story scenario)
+- **Dashboard integration**: `automation` WebSocket messages trigger audio playback in the browser
+
+### Trigger Types
+| Type | Fields | Fires when |
+|------|--------|------------|
+| `prop_solved` | `propId` | Prop transitions unsolved → solved |
+| `sensor_triggered` | `propId`, `sensorId` | Specific sensor triggered |
+| `timer` | `atElapsedMs` | Session elapsed time reaches threshold |
+| `session_start` | — | Session starts |
+| `session_end` | — | Session ends |
+
+### Action Types
+| Type | Fields | Effect |
+|------|--------|--------|
+| `play_audio` | `file`, `delay` | WS → dashboard plays sound effect |
+| `stop_music` | `delay` | WS → dashboard stops background music |
+| `play_music` | `file`, `delay` | WS → dashboard plays background track |
+| `mqtt_cmd` | `propId`, `command`, `payload`, `delay` | MQTT command to ESP32 |
+
+### Key Behaviors
+- Each scenario fires **once per session** (tracked in `firedSet`)
+- `firedSet` resets on `session_started`
+- Timer triggers checked every 1s during active session (paused time excluded)
+- Actions execute with optional `delay` (ms) via `setTimeout`
+- Hot-reloadable: scenarios reload on config change or `/api/reload`
+
+### REST Endpoints
+```
+GET    /api/config/scenarios          # List all scenarios
+POST   /api/config/scenarios          # Add scenario
+PUT    /api/config/scenarios/:id      # Update scenario
+DELETE /api/config/scenarios/:id      # Delete scenario
+```
+
+### State Manager Events
+State manager emits events via `onEvent(fn)` callback:
+- `prop_solved` — `{ propId, timestamp }`
+- `sensor_triggered` — `{ propId, sensorId, timestamp }`
+- `session_started` — `{ timestamp }`
+- `session_ended` — `{ result, timestamp }`
+
+---
+
+### Admin UI Tabbed Layout
+
+The admin UI (`admin/index.html`) is organized into 5 tabs:
+
+| Tab | Content |
+|-----|---------|
+| **General** | Room info, MQTT settings, Sensor Types, Export/Import |
+| **Props** | Props list with drag-and-drop ordering |
+| **Automatismes** | Automation rules list with add/edit/delete |
+| **Audio** | Sound effects & music manager (upload, rename, delete, role assignment, preview) |
+| **Statistiques** | Stats summary cards, per-prop analytics, session history |
+
+### Media Management
+
+Audio files stored on the RC filesystem under `media/`:
+```
+media/
+├── effects/          # Sound effects (.mp3)
+├── music/            # Background music tracks (.mp3)
+├── assets/           # Other assets (background image, hint sound)
+└── media-index.json  # Index of all sounds with metadata
+```
+
+**REST API Endpoints (Media):**
+```
+GET    /api/media/sounds              # List all sounds (returns media-index entries)
+POST   /api/media/sounds              # Upload sound (multipart: name, type, file)
+PUT    /api/media/sounds/:key         # Update sound (name, role)
+DELETE /api/media/sounds/:key         # Delete sound
+POST   /api/media/assets/:key         # Upload asset (backgroundImage, hintSound)
+GET    /api/media/assets/:key         # Check asset exists (HEAD) or get metadata
+DELETE /api/media/assets/:key         # Delete asset
+```
+
+**Static serving:** `app.use('/media', express.static(MEDIA_DIR))` — files accessible at `/media/effects/<filename>`, `/media/music/<filename>`, `/media/assets/<filename>`.
+
+**Important (multer field order):** When uploading via multipart FormData, text fields (`name`, `type`) must be appended **before** the `file` field. Multer processes fields in order — if `file` comes first, `req.body.type` is undefined in the `destination` callback and files land in the wrong directory.
+
+---
+
 ## Known Issues / TODO
 
 - ~~**No MQTT reset on session start**~~: Addressed by the two-phase arm/reset design above
@@ -326,5 +417,6 @@ Physical prop control follows a two-phase flow to separate room preparation from
 
 - ~~Session history query endpoint~~ — Done: `GET /api/sessions` + `GET /api/stats` endpoints, consumed by both admin UI and Dashboard StatsModal
 - ~~Prop auto-discovery~~ — Done: `discoverProp()` in state-manager auto-creates props from MQTT status messages, using `mqttStatus.name` for display name
+- Admin UI: expose `timer`, `session_start`, `session_end`, `sensor_triggered` trigger types in automatisme editor (engine supports them, UI only shows `prop_solved`)
 - Multi-dashboard support (already works, just broadcast)
 - Database storage instead of JSON file (for larger deployments)
