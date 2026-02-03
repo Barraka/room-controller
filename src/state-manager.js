@@ -26,6 +26,8 @@ export function createStateManager(config, configPath) {
       propId: propConfig.propId,
       name: propConfig.name,
       order: propConfig.order,
+      pieceId: propConfig.pieceId || null,
+      type: propConfig.type || null,
       online: false,
       solved: false,
       override: false,
@@ -93,7 +95,8 @@ export function createStateManager(config, configPath) {
     getFullState() {
       return {
         session: this.getSession(),
-        props: this.getProps()
+        props: this.getProps(),
+        pieces: config.pieces || []
       };
     },
 
@@ -468,6 +471,8 @@ export function createStateManager(config, configPath) {
         propId,
         name: mqttStatus.name || propId,
         order: maxOrder + 1,
+        pieceId: null,
+        type: null,
         online: mqttStatus.online ?? true,
         solved: mqttStatus.solved ?? false,
         override: mqttStatus.override ?? false,
@@ -487,6 +492,7 @@ export function createStateManager(config, configPath) {
               propId,
               name: mqttStatus.name || propId,
               type: '',
+              pieceId: null,
               order: newProp.order,
               sensors: sensors.map(s => ({ sensorId: s.sensorId, label: s.label }))
             });
@@ -514,6 +520,9 @@ export function createStateManager(config, configPath) {
       // Update room info
       config.room = newConfig.room;
 
+      // Update pieces
+      config.pieces = newConfig.pieces || [];
+
       // Get current prop IDs and new prop IDs
       const currentPropIds = new Set(props.keys());
       const newPropIds = new Set(newConfig.props.map(p => p.propId));
@@ -534,6 +543,8 @@ export function createStateManager(config, configPath) {
           // Update config fields, preserve runtime state
           existing.name = propConfig.name;
           existing.order = propConfig.order;
+          existing.pieceId = propConfig.pieceId || null;
+          existing.type = propConfig.type || null;
 
           // Update sensors: preserve triggered state for existing sensors
           const existingSensors = new Map(existing.sensors.map(s => [s.sensorId, s]));
@@ -553,6 +564,8 @@ export function createStateManager(config, configPath) {
             propId: propConfig.propId,
             name: propConfig.name,
             order: propConfig.order,
+            pieceId: propConfig.pieceId || null,
+            type: propConfig.type || null,
             online: false,
             solved: false,
             override: false,
@@ -568,7 +581,7 @@ export function createStateManager(config, configPath) {
         }
       }
 
-      console.log(`[State] Config reloaded: ${props.size} props`);
+      console.log(`[State] Config reloaded: ${props.size} props, ${config.pieces.length} pieces`);
       return { success: true };
     }
   };

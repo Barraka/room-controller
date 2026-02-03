@@ -258,6 +258,25 @@ npm start            # Production start
 
 ## Recent Changes
 
+### Pièces (Physical Rooms) Feature
+- **Data model**: `pieces` array in `room-config.json` with `{ id, name, order }`
+- **Props**: Each prop has optional `pieceId` field linking to a pièce
+- **State manager**: `getFullState()` includes `pieces`, `reloadConfig()` updates `config.pieces` and prop `pieceId`
+- **WebSocket**: `full_state` message includes `pieces` array
+- **Admin UI**: Pièces CRUD in General tab, pieceId dropdown in prop modal, pièce badge on prop cards
+- **GM Dashboard**: Props grouped by pièce with amber title bars spanning full width
+
+### Admin UI Local-Only Editing
+- **Batch editing**: All config changes (props, pieces, scenarios, sensor types, room, mqtt) stay in browser memory (`localConfig`) until "Appliquer" is clicked
+- **No immediate API calls**: Form handlers update `localConfig` directly instead of calling individual API endpoints
+- **Full config save**: New `PUT /api/config` endpoint saves entire config at once
+- **Sticky warning bar**: "Modifications non sauvegardées" bar fixed at top with "Sauvegarder & Appliquer" and "Annuler" buttons
+- **Discard changes**: "Annuler" resets `localConfig` to last saved state
+
+### Admin UI Styling
+- **Modifier button**: Changed from gray (#444) to blue (#2563eb) to look active
+- **Pièce badge**: Amber/orange color (#5c3d1e background, #fbbf24 text) distinct from cyan prop type badge
+
 ### Export / Import
 - **Export** (`GET /api/export`): Streams a `.zip` via `archiver` containing sanitized `room-config.json` (no mqtt/ports), `media-index.json`, `media/` directories, and optionally `session-history.json`
 - **Import** (`POST /api/import`): Accepts a `.zip` via multer, validates contents, merges config (preserves local network settings), replaces media, hot-reloads state. Blocked during active sessions.

@@ -266,6 +266,39 @@ export function createAdminServer(port, stateManager, scenarioEngine = null) {
     }
   });
 
+  // Save full config (batch save from admin UI)
+  app.put('/api/config', (req, res) => {
+    try {
+      const newConfig = req.body;
+
+      // Validate required fields
+      if (!newConfig.room || !newConfig.mqtt || !newConfig.props) {
+        return res.status(400).json({ error: 'Missing required config sections (room, mqtt, props)' });
+      }
+
+      // Load existing config to preserve websocket/admin ports
+      const existingConfig = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+
+      // Merge: keep network-related settings, update everything else
+      const mergedConfig = {
+        room: newConfig.room,
+        mqtt: newConfig.mqtt,
+        websocket: existingConfig.websocket,  // Preserve port settings
+        admin: existingConfig.admin,          // Preserve port settings
+        dashboard: newConfig.dashboard || existingConfig.dashboard || {},
+        props: newConfig.props || [],
+        pieces: newConfig.pieces || [],
+        scenarios: newConfig.scenarios || [],
+        sensorTypes: newConfig.sensorTypes || []
+      };
+
+      writeFileSync(CONFIG_FILE, JSON.stringify(mergedConfig, null, 2));
+      res.json({ success: true, message: 'Configuration saved' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to save config', details: err.message });
+    }
+  });
+
   // Update room info
   app.put('/api/config/room', (req, res) => {
     try {
@@ -284,6 +317,105 @@ export function createAdminServer(port, stateManager, scenarioEngine = null) {
       res.status(500).json({ error: 'Failed to update room', details: err.message });
     }
   });
+
+  // ─────────────────────────────────────────────────────────
+  // Pièces (physical rooms) API Routes
+  // ─────────────────────────────────────────────────────────
+
+  // Get all pièces
+  app.get('/api/config/pieces', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      res.json(config.pieces || []);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to read pieces', details: err.message });
+    }
+  });
+
+  // Add a new pièce
+  app.post('/api/config/pieces', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      const { name, order } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Piece name is required' });
+      }
+
+      if (!config.pieces) config.pieces = [];
+
+      const newPiece = {
+        id: `piece-${Date.now()}`,
+        name: name.trim(),
+        order: order ?? (config.pieces.length + 1)
+      };
+
+      config.pieces.push(newPiece);
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+      res.json({ success: true, piece: newPiece });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to add piece', details: err.message });
+    }
+  });
+
+  // Update a pièce
+  app.put('/api/config/pieces/:id', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      if (!config.pieces) config.pieces = [];
+
+      const piece = config.pieces.find(p => p.id === req.params.id);
+      if (!piece) {
+        return res.status(404).json({ error: 'Piece not found' });
+      }
+
+      const { name, order } = req.body;
+      if (name !== undefined) piece.name = name.trim();
+      if (order !== undefined) piece.order = order;
+
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+      res.json({ success: true, piece });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update piece', details: err.message });
+    }
+  });
+
+  // Delete a pièce (unlinks props but doesn't delete them)
+  app.delete('/api/config/pieces/:id', (req, res) => {
+    try {
+      const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+      if (!config.pieces) config.pieces = [];
+
+      const index = config.pieces.findIndex(p => p.id === req.params.id);
+      if (index === -1) {
+        return res.status(404).json({ error: 'Piece not found' });
+      }
+
+      // Remove the piece
+      config.pieces.splice(index, 1);
+
+      // Unlink props that were assigned to this piece
+      if (config.props) {
+        config.props.forEach(prop => {
+          if (prop.pieceId === req.params.id) {
+            prop.pieceId = null;
+          }
+        });
+      }
+
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete piece', details: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────
+  // Props API Routes
+  // ─────────────────────────────────────────────────────────
 
   // Get all props
   app.get('/api/config/props', (req, res) => {

@@ -135,8 +135,12 @@
     }
 
     .btn-secondary {
-      background: #444;
+      background: #2563eb;
       color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background: #3b82f6;
     }
 
     .btn-danger {
@@ -252,18 +256,36 @@
     }
 
     .restart-warning {
-      background: #fa03;
-      color: #fa0;
-      padding: 10px 15px;
-      border-radius: 6px;
-      margin-top: 20px;
+      background: #fa0;
+      color: #000;
+      padding: 12px 20px;
+      border-radius: 0;
       display: none;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      font-weight: 500;
     }
 
     .restart-warning.show {
       display: flex;
+    }
+
+    .restart-warning .btn-primary {
+      background: #222;
+      color: #fa0;
+      border: none;
+    }
+
+    .restart-warning .btn-secondary {
+      background: transparent;
+      color: #222;
+      border: 1px solid #222;
     }
 
     .empty-state {
@@ -671,9 +693,9 @@
   </h1>
 
   <div class="restart-warning" id="restartWarning">
-    <span>Configuration modifiee.</span>
-    <button class="btn-primary btn-small" onclick="reloadConfig()">Appliquer</button>
-    <button class="btn-secondary btn-small" onclick="location.reload()">Rafraichir</button>
+    <span>⚠️ Modifications non sauvegardees</span>
+    <button class="btn-primary btn-small" onclick="reloadConfig()">Sauvegarder & Appliquer</button>
+    <button class="btn-secondary btn-small" onclick="discardChanges()">Annuler</button>
   </div>
 
   <div class="tab-bar">
@@ -720,6 +742,18 @@
     </div>
     <div class="actions">
       <button class="btn-secondary btn-small" onclick="openEditMqttModal()">Modifier</button>
+    </div>
+  </div>
+
+  <!-- Pièces (physical rooms) -->
+  <h2>Pièces</h2>
+  <div class="card">
+    <p style="color: #aaa; font-size: 13px; margin-bottom: 12px;">
+      Organisez vos props par pièce physique (ex: Salle d'entrée, Laboratoire, Salle secrète).
+    </p>
+    <div id="piecesList" style="margin-bottom: 12px;"></div>
+    <div class="actions">
+      <button class="btn-secondary btn-small" onclick="openAddPieceModal()">+ Ajouter une pièce</button>
     </div>
   </div>
 
@@ -1022,6 +1056,12 @@
           </div>
         </div>
         <div class="form-group">
+          <label>Pièce</label>
+          <select id="propPieceId">
+            <option value="">-- Sans pièce --</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Capteurs</label>
           <div class="sensor-editor">
             <div class="sensor-header">
@@ -1064,6 +1104,28 @@
     </div>
   </div>
 
+  <!-- Add/Edit Pièce Modal -->
+  <div class="modal-overlay" id="pieceModal">
+    <div class="modal" style="max-width: 400px;">
+      <h3 id="pieceModalTitle">Ajouter une Pièce</h3>
+      <form id="pieceForm">
+        <input type="hidden" id="pieceEditId" value="">
+        <div class="form-group">
+          <label>Nom de la pièce</label>
+          <input type="text" id="pieceName" placeholder="ex: Salle d'entrée, Laboratoire" required>
+        </div>
+        <div class="form-group">
+          <label>Ordre (position dans la séquence)</label>
+          <input type="number" id="pieceOrder" min="1" value="1" required>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="button" class="btn-secondary" onclick="closeModal('pieceModal')">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
@@ -1080,8 +1142,10 @@
   </div>
 
   <script>
-    let config = null;
+    let config = null;          // Original config from server
+    let localConfig = null;     // Working copy with pending edits
     let state = null;
+    let hasUnsavedChanges = false;
 
     // ─────────────────────────────────────────────────────────
     // API Calls
@@ -1090,7 +1154,15 @@
     async function fetchConfig() {
       const res = await fetch('/api/config');
       config = await res.json();
+      localConfig = JSON.parse(JSON.stringify(config)); // Deep copy
+      hasUnsavedChanges = false;
+      hideRestartWarning();
       renderConfig();
+    }
+
+    function markUnsavedChanges() {
+      hasUnsavedChanges = true;
+      showRestartWarning();
     }
 
     async function fetchState() {
@@ -1111,23 +1183,24 @@
     // ─────────────────────────────────────────────────────────
 
     function renderConfig() {
-      // Room info
-      document.getElementById('roomId').textContent = config.room.id;
-      document.getElementById('roomName').textContent = config.room.name;
-      document.getElementById('roomSite').textContent = config.room.site || 'default';
+      // Room info (use localConfig for display)
+      document.getElementById('roomId').textContent = localConfig.room.id;
+      document.getElementById('roomName').textContent = localConfig.room.name;
+      document.getElementById('roomSite').textContent = localConfig.room.site || 'default';
 
       // MQTT
-      document.getElementById('mqttBroker').textContent = config.mqtt.broker;
-      document.getElementById('mqttBaseTopic').textContent = config.mqtt.baseTopic;
+      document.getElementById('mqttBroker').textContent = localConfig.mqtt.broker;
+      document.getElementById('mqttBaseTopic').textContent = localConfig.mqtt.baseTopic;
 
       renderSensorTypes();
+      renderPiecesList();
       renderProps();
       renderScenarios();
     }
 
     function renderSensorTypes() {
       const dropdown = document.getElementById('sensorTypesDropdown');
-      const types = config.sensorTypes || [];
+      const types = localConfig.sensorTypes || [];
 
       dropdown.innerHTML = '<option value="">-- Selectionner pour modifier --</option>' +
         types.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
@@ -1142,10 +1215,18 @@
 
     function updatePropTypeDropdown(selectedType = '') {
       const dropdown = document.getElementById('propType');
-      const types = config.sensorTypes || [];
+      const types = localConfig.sensorTypes || [];
 
       dropdown.innerHTML = '<option value="">-- Aucun --</option>' +
         types.map(t => `<option value="${t.id}" ${t.id === selectedType ? 'selected' : ''}>${t.label}</option>`).join('');
+    }
+
+    function updatePropPieceDropdown(selectedPieceId = '') {
+      const dropdown = document.getElementById('propPieceId');
+      const pieces = (localConfig.pieces || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      dropdown.innerHTML = '<option value="">-- Sans pièce --</option>' +
+        pieces.map(p => `<option value="${p.id}" ${p.id === selectedPieceId ? 'selected' : ''}>${p.name}</option>`).join('');
     }
 
     function onSensorTypeSelected() {
@@ -1172,14 +1253,14 @@
     function renderProps() {
       const container = document.getElementById('propsList');
 
-      if (!config.props || config.props.length === 0) {
+      if (!localConfig.props || localConfig.props.length === 0) {
         container.innerHTML = '<div class="empty-state">Aucun prop configure</div>';
         return;
       }
 
       // Group props by order (step)
       const stepGroups = {};
-      config.props.forEach(prop => {
+      localConfig.props.forEach(prop => {
         const order = prop.order || 1;
         if (!stepGroups[order]) {
           stepGroups[order] = [];
@@ -1220,6 +1301,12 @@
       container.innerHTML = html;
     }
 
+    function getPieceName(pieceId) {
+      if (!pieceId) return null;
+      const piece = (localConfig.pieces || []).find(p => p.id === pieceId);
+      return piece?.name || null;
+    }
+
     function renderPropCard(prop) {
       // Find runtime state for this prop
       const runtimeProp = state?.props?.find(p => p.propId === prop.propId);
@@ -1229,6 +1316,10 @@
       // Type is now at prop level
       const propTypeLabel = getTypeLabel(prop.type);
       const propTypeBadge = propTypeLabel ? `<span class="prop-type-badge">${propTypeLabel}</span>` : '';
+
+      // Piece badge (distinct orange/amber color)
+      const pieceName = getPieceName(prop.pieceId);
+      const pieceBadge = pieceName ? `<span class="piece-badge" style="background: #5c3d1e; color: #fbbf24; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">🚪 ${pieceName}</span>` : '';
 
       const sensorsHtml = prop.sensors.map(s => {
         const triggered = runtimeProp?.sensors?.find(rs => rs.sensorId === s.sensorId)?.triggered;
@@ -1241,7 +1332,7 @@
           <div class="card-header">
             <div>
               <span class="drag-handle">⋮⋮</span>
-              <span class="card-title">${prop.name}${propTypeBadge}</span>
+              <span class="card-title">${prop.name}${propTypeBadge}${pieceBadge}</span>
               <div class="card-subtitle">${prop.propId}</div>
             </div>
             <div class="prop-status">
@@ -1271,15 +1362,15 @@
     }
 
     function openEditRoomModal() {
-      document.getElementById('editRoomId').value = config.room.id;
-      document.getElementById('editRoomName').value = config.room.name;
-      document.getElementById('editRoomSite').value = config.room.site || 'default';
+      document.getElementById('editRoomId').value = localConfig.room.id;
+      document.getElementById('editRoomName').value = localConfig.room.name;
+      document.getElementById('editRoomSite').value = localConfig.room.site || 'default';
       openModal('editRoomModal');
     }
 
     function openEditMqttModal() {
-      document.getElementById('editMqttBroker').value = config.mqtt.broker;
-      document.getElementById('editMqttBaseTopic').value = config.mqtt.baseTopic;
+      document.getElementById('editMqttBroker').value = localConfig.mqtt.broker;
+      document.getElementById('editMqttBaseTopic').value = localConfig.mqtt.baseTopic;
       openModal('editMqttModal');
     }
 
@@ -1292,13 +1383,16 @@
       document.getElementById('propName').value = '';
 
       // Auto-assign next order (max existing order + 1)
-      const maxOrder = config.props.length > 0
-        ? Math.max(...config.props.map(p => p.order || 1))
+      const maxOrder = localConfig.props.length > 0
+        ? Math.max(...localConfig.props.map(p => p.order || 1))
         : 0;
       document.getElementById('propOrder').value = maxOrder + 1;
 
       // Update prop type dropdown
       updatePropTypeDropdown('');
+
+      // Update piece dropdown
+      updatePropPieceDropdown('');
 
       // Initialize with one empty sensor
       renderSensorsList([{ sensorId: '', label: '' }]);
@@ -1306,7 +1400,7 @@
     }
 
     function openEditPropModal(propId) {
-      const prop = config.props.find(p => p.propId === propId);
+      const prop = localConfig.props.find(p => p.propId === propId);
       if (!prop) return;
 
       document.getElementById('propModalTitle').textContent = 'Modifier le Prop';
@@ -1320,6 +1414,9 @@
       // Update prop type dropdown with current value
       updatePropTypeDropdown(prop.type || '');
 
+      // Update piece dropdown with current value
+      updatePropPieceDropdown(prop.pieceId || '');
+
       // Populate sensors list (type is now at prop level)
       const sensors = prop.sensors.map(s => ({
         sensorId: s.sensorId,
@@ -1328,6 +1425,113 @@
       renderSensorsList(sensors.length > 0 ? sensors : [{ sensorId: '', label: '' }]);
       openModal('propModal');
     }
+
+    // ─────────────────────────────────────────────────────────
+    // Pièces (Physical Rooms) Management
+    // ─────────────────────────────────────────────────────────
+
+    function renderPiecesList() {
+      const container = document.getElementById('piecesList');
+      const pieces = localConfig.pieces || [];
+
+      if (pieces.length === 0) {
+        container.innerHTML = '<div style="color: #666; font-size: 13px;">Aucune pièce définie</div>';
+        return;
+      }
+
+      // Sort by order
+      const sorted = [...pieces].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      container.innerHTML = sorted.map(piece => `
+        <div class="piece-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #333;">
+          <span style="color: #00d4ff; font-weight: bold; min-width: 24px;">${piece.order || '-'}</span>
+          <span style="flex: 1;">${piece.name}</span>
+          <button class="btn-secondary btn-small" onclick="openEditPieceModal('${piece.id}')">Modifier</button>
+          <button class="btn-danger btn-small" onclick="deletePiece('${piece.id}')">Supprimer</button>
+        </div>
+      `).join('');
+    }
+
+    function openAddPieceModal() {
+      document.getElementById('pieceModalTitle').textContent = 'Ajouter une Pièce';
+      document.getElementById('pieceEditId').value = '';
+      document.getElementById('pieceName').value = '';
+      document.getElementById('pieceOrder').value = (localConfig.pieces?.length || 0) + 1;
+      openModal('pieceModal');
+    }
+
+    function openEditPieceModal(pieceId) {
+      const piece = (localConfig.pieces || []).find(p => p.id === pieceId);
+      if (!piece) return;
+
+      document.getElementById('pieceModalTitle').textContent = 'Modifier la Pièce';
+      document.getElementById('pieceEditId').value = pieceId;
+      document.getElementById('pieceName').value = piece.name;
+      document.getElementById('pieceOrder').value = piece.order || 1;
+      openModal('pieceModal');
+    }
+
+    document.getElementById('pieceForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('pieceEditId').value;
+      const name = document.getElementById('pieceName').value.trim();
+      const order = parseInt(document.getElementById('pieceOrder').value) || 1;
+
+      if (!localConfig.pieces) {
+        localConfig.pieces = [];
+      }
+
+      if (editId) {
+        // Update existing
+        const idx = localConfig.pieces.findIndex(p => p.id === editId);
+        if (idx !== -1) {
+          localConfig.pieces[idx] = { ...localConfig.pieces[idx], name, order };
+          showToast('Pièce modifiée (non sauvegardé)');
+        } else {
+          showToast('Pièce introuvable', true);
+          return;
+        }
+      } else {
+        // Create new with generated ID
+        const newId = 'piece-' + Date.now();
+        localConfig.pieces.push({ id: newId, name, order });
+        showToast('Pièce ajoutée (non sauvegardé)');
+      }
+
+      closeModal('pieceModal');
+      markUnsavedChanges();
+      renderConfig();
+    });
+
+    function deletePiece(pieceId) {
+      const piece = (localConfig.pieces || []).find(p => p.id === pieceId);
+      if (!piece) return;
+
+      if (!confirm(`Supprimer la pièce "${piece.name}" ?\n\nLes props associés ne seront pas supprimés mais seront désassociés.`)) {
+        return;
+      }
+
+      // Remove the piece
+      const idx = localConfig.pieces.findIndex(p => p.id === pieceId);
+      if (idx !== -1) {
+        localConfig.pieces.splice(idx, 1);
+      }
+
+      // Unlink props from this piece
+      localConfig.props.forEach(prop => {
+        if (prop.pieceId === pieceId) {
+          prop.pieceId = null;
+        }
+      });
+
+      showToast('Pièce supprimée (non sauvegardé)');
+      markUnsavedChanges();
+      renderConfig();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Sensor Type Modal
+    // ─────────────────────────────────────────────────────────
 
     function openAddSensorTypeModal() {
       document.getElementById('sensorTypeModalTitle').textContent = 'Ajouter un Type';
@@ -1340,7 +1544,7 @@
     }
 
     function openEditSensorTypeModal(typeId) {
-      const sensorType = (config.sensorTypes || []).find(t => t.id === typeId);
+      const sensorType = (localConfig.sensorTypes || []).find(t => t.id === typeId);
       if (!sensorType) return;
 
       document.getElementById('sensorTypeModalTitle').textContent = 'Modifier le Type';
@@ -1438,58 +1642,37 @@
     // Form Handlers
     // ─────────────────────────────────────────────────────────
 
-    document.getElementById('editRoomForm').addEventListener('submit', async (e) => {
+    document.getElementById('editRoomForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      try {
-        const res = await fetch('/api/config/room', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: document.getElementById('editRoomId').value,
-            name: document.getElementById('editRoomName').value,
-            site: document.getElementById('editRoomSite').value
-          })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Salle mise a jour');
-          closeModal('editRoomModal');
-          showRestartWarning();
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
-      }
+
+      localConfig.room = {
+        id: document.getElementById('editRoomId').value,
+        name: document.getElementById('editRoomName').value,
+        site: document.getElementById('editRoomSite').value
+      };
+
+      showToast('Salle mise a jour (non sauvegarde)');
+      closeModal('editRoomModal');
+      markUnsavedChanges();
+      renderConfig();
     });
 
-    document.getElementById('editMqttForm').addEventListener('submit', async (e) => {
+    document.getElementById('editMqttForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      try {
-        const res = await fetch('/api/config/mqtt', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            broker: document.getElementById('editMqttBroker').value,
-            baseTopic: document.getElementById('editMqttBaseTopic').value
-          })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast('MQTT mis a jour');
-          closeModal('editMqttModal');
-          showRestartWarning();
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
-      }
+
+      localConfig.mqtt = {
+        ...localConfig.mqtt,
+        broker: document.getElementById('editMqttBroker').value,
+        baseTopic: document.getElementById('editMqttBaseTopic').value
+      };
+
+      showToast('MQTT mis a jour (non sauvegarde)');
+      closeModal('editMqttModal');
+      markUnsavedChanges();
+      renderConfig();
     });
 
-    document.getElementById('propForm').addEventListener('submit', async (e) => {
+    document.getElementById('propForm').addEventListener('submit', (e) => {
       e.preventDefault();
 
       // Collect sensors from UI
@@ -1499,70 +1682,64 @@
       const propId = document.getElementById('propId').value.trim();
       const originalId = document.getElementById('propOriginalId').value;
       const propType = document.getElementById('propType').value;
+      const pieceId = document.getElementById('propPieceId').value || null;
 
       if (!propId) {
         showToast('L\'ID du prop est requis', true);
         return;
       }
 
-      const body = {
+      const propData = {
         propId,
         name: document.getElementById('propName').value.trim(),
         type: propType,
+        pieceId,
         order: parseInt(document.getElementById('propOrder').value, 10),
         sensors
       };
 
-      try {
-        let res;
-        if (mode === 'add') {
-          res = await fetch('/api/config/props', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-        } else {
-          res = await fetch(`/api/config/props/${originalId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
+      // Update localConfig directly (no API call)
+      if (mode === 'add') {
+        // Check for duplicate propId
+        if (localConfig.props.some(p => p.propId === propId)) {
+          showToast('Un prop avec cet ID existe deja', true);
+          return;
         }
-
-        const data = await res.json();
-        if (data.success) {
-          showToast(mode === 'add' ? 'Prop ajoute' : 'Prop mis a jour');
-          closeModal('propModal');
-          showRestartWarning();
-          fetchConfig();
+        localConfig.props.push(propData);
+        showToast('Prop ajoute (non sauvegarde)');
+      } else {
+        // Update existing prop
+        const idx = localConfig.props.findIndex(p => p.propId === originalId);
+        if (idx !== -1) {
+          localConfig.props[idx] = propData;
+          showToast('Prop mis a jour (non sauvegarde)');
         } else {
-          showToast(data.error, true);
+          showToast('Prop introuvable', true);
+          return;
         }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
       }
+
+      closeModal('propModal');
+      markUnsavedChanges();
+      renderConfig();
     });
 
-    async function deleteProp(propId) {
+    function deleteProp(propId) {
       if (!confirm(`Supprimer le prop "${propId}" ?`)) return;
 
-      try {
-        const res = await fetch(`/api/config/props/${propId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Prop supprime');
-          showRestartWarning();
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+      const idx = localConfig.props.findIndex(p => p.propId === propId);
+      if (idx !== -1) {
+        localConfig.props.splice(idx, 1);
+        showToast('Prop supprime (non sauvegarde)');
+        markUnsavedChanges();
+        renderConfig();
+      } else {
+        showToast('Prop introuvable', true);
       }
     }
 
     // Sensor Type Form Handler
-    document.getElementById('sensorTypeForm').addEventListener('submit', async (e) => {
+    document.getElementById('sensorTypeForm').addEventListener('submit', (e) => {
       e.preventDefault();
 
       const mode = document.getElementById('sensorTypeEditMode').value;
@@ -1575,50 +1752,48 @@
         return;
       }
 
-      try {
-        let res;
-        if (mode === 'add') {
-          res = await fetch('/api/config/sensor-types', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, label })
-          });
-        } else {
-          res = await fetch(`/api/config/sensor-types/${originalId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ label })
-          });
-        }
-
-        const data = await res.json();
-        if (data.success) {
-          showToast(mode === 'add' ? 'Type ajoute' : 'Type mis a jour');
-          closeModal('sensorTypeModal');
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+      if (!localConfig.sensorTypes) {
+        localConfig.sensorTypes = [];
       }
+
+      if (mode === 'add') {
+        // Check for duplicate
+        if (localConfig.sensorTypes.some(t => t.id === id)) {
+          showToast('Ce type existe deja', true);
+          return;
+        }
+        localConfig.sensorTypes.push({ id, label });
+        showToast('Type ajoute (non sauvegarde)');
+      } else {
+        const idx = localConfig.sensorTypes.findIndex(t => t.id === originalId);
+        if (idx !== -1) {
+          localConfig.sensorTypes[idx] = { id: originalId, label };
+          showToast('Type mis a jour (non sauvegarde)');
+        } else {
+          showToast('Type introuvable', true);
+          return;
+        }
+      }
+
+      closeModal('sensorTypeModal');
+      markUnsavedChanges();
+      renderConfig();
     });
 
-    async function deleteSensorType(typeId) {
+    function deleteSensorType(typeId) {
       const typeLabel = getTypeLabel(typeId);
       if (!confirm(`Supprimer le type "${typeLabel}" ?`)) return;
 
-      try {
-        const res = await fetch(`/api/config/sensor-types/${typeId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Type supprime');
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+      if (!localConfig.sensorTypes) return;
+
+      const idx = localConfig.sensorTypes.findIndex(t => t.id === typeId);
+      if (idx !== -1) {
+        localConfig.sensorTypes.splice(idx, 1);
+        showToast('Type supprime (non sauvegarde)');
+        markUnsavedChanges();
+        renderConfig();
+      } else {
+        showToast('Type introuvable', true);
       }
     }
 
@@ -1701,7 +1876,7 @@
     }
 
     // Drop between steps -> create new sequential step
-    async function handleDropBetween(event, afterStepOrder) {
+    function handleDropBetween(event, afterStepOrder) {
       event.preventDefault();
       event.target.classList.remove('drag-over');
 
@@ -1709,7 +1884,7 @@
 
       // Calculate new order: insert after afterStepOrder
       // Get all unique orders sorted
-      const orders = [...new Set(config.props.map(p => p.order))].sort((a, b) => a - b);
+      const orders = [...new Set(localConfig.props.map(p => p.order))].sort((a, b) => a - b);
       const afterIndex = orders.indexOf(afterStepOrder);
 
       let newOrder;
@@ -1718,7 +1893,7 @@
         newOrder = orders.length > 0 ? orders[0] - 1 : 1;
         if (newOrder < 1) {
           // Need to shift all orders up
-          await shiftOrdersAndMove(draggedPropId, 1, true);
+          shiftOrdersAndMove(draggedPropId, 1, true);
           return;
         }
       } else {
@@ -1729,7 +1904,7 @@
           newOrder = afterStepOrder + 1;
           if (newOrder >= nextOrder) {
             // Need to shift orders to make room
-            await shiftOrdersAndMove(draggedPropId, newOrder, true);
+            shiftOrdersAndMove(draggedPropId, newOrder, true);
             return;
           }
         } else {
@@ -1738,11 +1913,11 @@
         }
       }
 
-      await updatePropOrder(draggedPropId, newOrder);
+      updatePropOrder(draggedPropId, newOrder);
     }
 
     // Drop on step -> add as parallel (middle) OR new step (top/bottom zones)
-    async function handleDropOnStep(event, stepOrder) {
+    function handleDropOnStep(event, stepOrder) {
       event.preventDefault();
       const stepGroup = event.target.closest('.step-group');
       const isNewStepBefore = stepGroup?.classList.contains('drag-over-newstep-before');
@@ -1756,57 +1931,53 @@
 
       if (isNewStepBefore) {
         // Top zone - create new step BEFORE this one
-        const orders = [...new Set(config.props.map(p => p.order))].sort((a, b) => a - b);
+        const orders = [...new Set(localConfig.props.map(p => p.order))].sort((a, b) => a - b);
         const stepIndex = orders.indexOf(stepOrder);
         const prevOrder = stepIndex > 0 ? orders[stepIndex - 1] : 0;
-        await handleDropBetween(event, prevOrder);
+        handleDropBetween(event, prevOrder);
       } else if (isNewStepAfter) {
         // Bottom zone - create new step AFTER this one
-        await handleDropBetween(event, stepOrder);
+        handleDropBetween(event, stepOrder);
       } else if (draggedPropOrder !== stepOrder) {
         // Middle zone - add as parallel (same order), only if different step
-        await updatePropOrder(draggedPropId, stepOrder);
+        updatePropOrder(draggedPropId, stepOrder);
       }
     }
 
-    async function updatePropOrder(propId, newOrder) {
-      try {
-        const res = await fetch(`/api/config/props/${propId}/order`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order: newOrder })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Ordre mis a jour');
-          showRestartWarning();
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+    function updatePropOrder(propId, newOrder) {
+      const idx = localConfig.props.findIndex(p => p.propId === propId);
+      if (idx !== -1) {
+        localConfig.props[idx].order = newOrder;
+        showToast('Ordre mis a jour (non sauvegarde)');
+        markUnsavedChanges();
+        renderConfig();
       }
     }
 
-    async function shiftOrdersAndMove(propId, targetOrder, insertBefore = false) {
-      try {
-        const res = await fetch(`/api/config/props/reorder`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ propId, targetOrder, insertBefore })
+    function shiftOrdersAndMove(propId, targetOrder, insertBefore = false) {
+      // Sort props by current order
+      const sortedProps = [...localConfig.props].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // Find the prop to move
+      const movingProp = localConfig.props.find(p => p.propId === propId);
+      if (!movingProp) return;
+
+      // Calculate orders and shift
+      if (insertBefore) {
+        // Shift all props with order >= targetOrder up by 1
+        localConfig.props.forEach(p => {
+          if (p.propId !== propId && p.order >= targetOrder) {
+            p.order = p.order + 1;
+          }
         });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Ordre mis a jour');
-          showRestartWarning();
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
       }
+
+      // Set the new order for the moving prop
+      movingProp.order = targetOrder;
+
+      showToast('Ordre mis a jour (non sauvegarde)');
+      markUnsavedChanges();
+      renderConfig();
     }
 
     // ─────────────────────────────────────────────────────────
@@ -1815,7 +1986,7 @@
 
     function getTypeLabel(typeId) {
       if (!typeId) return '';
-      const sensorType = (config.sensorTypes || []).find(t => t.id === typeId);
+      const sensorType = (localConfig.sensorTypes || []).find(t => t.id === typeId);
       return sensorType ? sensorType.label : typeId;
     }
 
@@ -1831,13 +2002,31 @@
       document.getElementById('restartWarning').classList.add('show');
     }
 
+    function hideRestartWarning() {
+      document.getElementById('restartWarning').classList.remove('show');
+    }
+
     async function reloadConfig() {
       try {
+        // First save localConfig to server
+        const saveRes = await fetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(localConfig)
+        });
+        const saveData = await saveRes.json();
+        if (!saveData.success) {
+          showToast(saveData.error || 'Erreur lors de la sauvegarde', true);
+          return;
+        }
+
+        // Then reload config in state manager
         const res = await fetch('/api/reload', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          showToast('Configuration rechargee (' + data.props + ' props)');
+          showToast('Configuration sauvegardee et rechargee (' + data.props + ' props)');
           document.getElementById('restartWarning').classList.remove('show');
+          hasUnsavedChanges = false;
           fetchConfig();
           fetchState();
         } else {
@@ -1846,6 +2035,15 @@
       } catch (err) {
         showToast('Erreur: ' + err.message, true);
       }
+    }
+
+    function discardChanges() {
+      if (!confirm('Annuler toutes les modifications non sauvegardees ?')) return;
+      localConfig = JSON.parse(JSON.stringify(config));
+      hasUnsavedChanges = false;
+      hideRestartWarning();
+      renderConfig();
+      showToast('Modifications annulees');
     }
 
     // Close modals on backdrop click
@@ -1987,7 +2185,7 @@
 
     function renderScenarios() {
       const container = document.getElementById('scenariosList');
-      const scenarios = config.scenarios || [];
+      const scenarios = localConfig.scenarios || [];
 
       if (scenarios.length === 0) {
         container.innerHTML = '<div class="empty-state">Aucun automatisme configure</div>';
@@ -2029,11 +2227,11 @@
       if (!trigger) return '?';
       switch (trigger.type) {
         case 'prop_solved': {
-          const p = config.props.find(p => p.propId === trigger.propId);
+          const p = localConfig.props.find(p => p.propId === trigger.propId);
           return `Enigme resolue: ${p?.name || trigger.propId}`;
         }
         case 'sensor_triggered': {
-          const p = config.props.find(p => p.propId === trigger.propId);
+          const p = localConfig.props.find(p => p.propId === trigger.propId);
           const s = p?.sensors?.find(s => s.sensorId === trigger.sensorId);
           return `Capteur: ${p?.name || trigger.propId} → ${s?.label || trigger.sensorId}`;
         }
@@ -2061,7 +2259,7 @@
 
     function populateScenarioPropDropdown(selectedPropId = '') {
       const dropdown = document.getElementById('scenarioTriggerPropId');
-      dropdown.innerHTML = (config.props || []).map(p =>
+      dropdown.innerHTML = (localConfig.props || []).map(p =>
         `<option value="${p.propId}" ${p.propId === selectedPropId ? 'selected' : ''}>${p.name} (${p.propId})</option>`
       ).join('');
       populateScenarioSensorDropdown(selectedPropId);
@@ -2069,7 +2267,7 @@
 
     function populateScenarioSensorDropdown(propId, selectedSensorId = '') {
       const dropdown = document.getElementById('scenarioTriggerSensorId');
-      const prop = (config.props || []).find(p => p.propId === propId);
+      const prop = (localConfig.props || []).find(p => p.propId === propId);
       const sensors = prop?.sensors || [];
       dropdown.innerHTML = sensors.map(s =>
         `<option value="${s.sensorId}" ${s.sensorId === selectedSensorId ? 'selected' : ''}>${s.label} (${s.sensorId})</option>`
@@ -2132,7 +2330,7 @@
             ` : ''}
             ${a.type === 'mqtt_cmd' ? `
               <select onchange="updateScenarioAction(${i}, 'propId', this.value)" style="width:150px;">
-                ${(config.props || []).map(p => `<option value="${p.propId}" ${p.propId === a.propId ? 'selected' : ''}>${p.name}</option>`).join('')}
+                ${(localConfig.props || []).map(p => `<option value="${p.propId}" ${p.propId === a.propId ? 'selected' : ''}>${p.name}</option>`).join('')}
               </select>
               <input type="text" value="${a.command || ''}" placeholder="commande" style="width:120px;"
                      onchange="updateScenarioAction(${i}, 'command', this.value)">
@@ -2183,7 +2381,7 @@
 
     async function openEditScenarioModal(id) {
       await fetchScenarioMedia();
-      const sc = (config.scenarios || []).find(s => s.id === id);
+      const sc = (localConfig.scenarios || []).find(s => s.id === id);
       if (!sc) return;
 
       document.getElementById('scenarioModalTitle').textContent = 'Modifier l\'Automatisme';
@@ -2210,7 +2408,7 @@
       openModal('scenarioModal');
     }
 
-    document.getElementById('scenarioForm').addEventListener('submit', async (e) => {
+    document.getElementById('scenarioForm').addEventListener('submit', (e) => {
       e.preventDefault();
 
       const mode = document.getElementById('scenarioEditMode').value;
@@ -2230,72 +2428,63 @@
         trigger.atElapsedMs = (mins * 60 + secs) * 1000;
       }
 
-      const body = {
+      const scenarioData = {
         name: document.getElementById('scenarioName').value.trim(),
         enabled: document.getElementById('scenarioEnabled').value === 'true',
         trigger,
         actions: scenarioActions
       };
 
-      try {
-        let res;
-        if (mode === 'add') {
-          res = await fetch('/api/config/scenarios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-        } else {
-          res = await fetch(`/api/config/scenarios/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
-        }
-
-        const data = await res.json();
-        if (data.success) {
-          showToast(mode === 'add' ? 'Automatisme ajoute' : 'Automatisme mis a jour');
-          closeModal('scenarioModal');
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+      if (!localConfig.scenarios) {
+        localConfig.scenarios = [];
       }
+
+      if (mode === 'add') {
+        // Generate new ID
+        scenarioData.id = 'auto-' + Date.now();
+        localConfig.scenarios.push(scenarioData);
+        showToast('Automatisme ajoute (non sauvegarde)');
+      } else {
+        const idx = localConfig.scenarios.findIndex(s => s.id === id);
+        if (idx !== -1) {
+          localConfig.scenarios[idx] = { ...localConfig.scenarios[idx], ...scenarioData };
+          showToast('Automatisme mis a jour (non sauvegarde)');
+        } else {
+          showToast('Automatisme introuvable', true);
+          return;
+        }
+      }
+
+      closeModal('scenarioModal');
+      markUnsavedChanges();
+      renderConfig();
     });
 
-    async function toggleScenario(id, enabled) {
-      try {
-        const res = await fetch(`/api/config/scenarios/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast(enabled ? 'Automatisme active' : 'Automatisme desactive');
-          fetchConfig();
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+    function toggleScenario(id, enabled) {
+      if (!localConfig.scenarios) return;
+
+      const idx = localConfig.scenarios.findIndex(s => s.id === id);
+      if (idx !== -1) {
+        localConfig.scenarios[idx].enabled = enabled;
+        showToast(enabled ? 'Automatisme active (non sauvegarde)' : 'Automatisme desactive (non sauvegarde)');
+        markUnsavedChanges();
+        renderConfig();
       }
     }
 
-    async function deleteScenario(id) {
+    function deleteScenario(id) {
       if (!confirm('Supprimer cet automatisme ?')) return;
-      try {
-        const res = await fetch(`/api/config/scenarios/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          showToast('Automatisme supprime');
-          fetchConfig();
-        } else {
-          showToast(data.error, true);
-        }
-      } catch (err) {
-        showToast('Erreur: ' + err.message, true);
+
+      if (!localConfig.scenarios) return;
+
+      const idx = localConfig.scenarios.findIndex(s => s.id === id);
+      if (idx !== -1) {
+        localConfig.scenarios.splice(idx, 1);
+        showToast('Automatisme supprime (non sauvegarde)');
+        markUnsavedChanges();
+        renderConfig();
+      } else {
+        showToast('Automatisme introuvable', true);
       }
     }
 
