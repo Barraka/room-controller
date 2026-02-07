@@ -219,21 +219,23 @@
 
     .toast {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 20px;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      padding: 12px 24px;
       border-radius: 8px;
       background: #2a5;
       color: white;
       opacity: 0;
-      transform: translateY(20px);
       transition: all 0.3s;
       z-index: 200;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .toast.show {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateX(-50%) translateY(0);
     }
 
     .toast.error {
@@ -805,15 +807,15 @@
   <!-- ═══ TAB: Props ═══ -->
   <div class="tab-panel" id="tab-props">
   <h2>Props</h2>
+  <button class="btn-primary" onclick="openAddPropModal()" style="margin-bottom: 15px;">+ Ajouter un Prop</button>
   <div id="propsList"></div>
-  <button class="btn-primary" onclick="openAddPropModal()" style="margin-top: 10px;">+ Ajouter un Prop</button>
   </div><!-- /tab-props -->
 
   <!-- ═══ TAB: Automatismes ═══ -->
   <div class="tab-panel" id="tab-automatismes">
   <h2>Automatismes</h2>
+  <button class="btn-primary" onclick="openAddScenarioModal()" style="margin-bottom: 15px;">+ Ajouter un Automatisme</button>
   <div id="scenariosList"></div>
-  <button class="btn-primary" onclick="openAddScenarioModal()" style="margin-top: 10px;">+ Ajouter un Automatisme</button>
   </div><!-- /tab-automatismes -->
 
   <!-- ═══ TAB: Audio ═══ -->
@@ -864,7 +866,6 @@
         <tr>
           <th></th>
           <th>Nom</th>
-          <th>Role</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -1477,6 +1478,12 @@
       const name = document.getElementById('pieceName').value.trim();
       const order = parseInt(document.getElementById('pieceOrder').value) || 1;
 
+      // Validate piece name
+      if (!name) {
+        showToast('Le nom de la pièce est requis', true);
+        return;
+      }
+
       if (!localConfig.pieces) {
         localConfig.pieces = [];
       }
@@ -1680,18 +1687,40 @@
 
       const mode = document.getElementById('propEditMode').value;
       const propId = document.getElementById('propId').value.trim();
+      const propName = document.getElementById('propName').value.trim();
       const originalId = document.getElementById('propOriginalId').value;
       const propType = document.getElementById('propType').value;
       const pieceId = document.getElementById('propPieceId').value || null;
 
+      // Validate prop name
+      if (!propName) {
+        showToast('Le nom du prop est requis', true);
+        return;
+      }
+
+      // Validate prop ID
       if (!propId) {
         showToast('L\'ID du prop est requis', true);
         return;
       }
 
+      // Validate propId format (alphanumeric, underscores, hyphens only)
+      if (!/^[a-zA-Z0-9_-]+$/.test(propId)) {
+        showToast('L\'ID ne peut contenir que des lettres, chiffres, tirets et underscores', true);
+        return;
+      }
+
+      // Check for duplicate sensor IDs within this prop
+      const sensorIds = sensors.map(s => s.sensorId);
+      const duplicateSensorIds = sensorIds.filter((id, idx) => sensorIds.indexOf(id) !== idx);
+      if (duplicateSensorIds.length > 0) {
+        showToast(`ID de capteur en double: ${duplicateSensorIds[0]}`, true);
+        return;
+      }
+
       const propData = {
         propId,
-        name: document.getElementById('propName').value.trim(),
+        name: propName,
         type: propType,
         pieceId,
         order: parseInt(document.getElementById('propOrder').value, 10),
@@ -2413,23 +2442,64 @@
 
       const mode = document.getElementById('scenarioEditMode').value;
       const id = document.getElementById('scenarioId').value;
+      const scenarioName = document.getElementById('scenarioName').value.trim();
       const triggerType = document.getElementById('scenarioTriggerType').value;
+
+      // Validate scenario name
+      if (!scenarioName) {
+        showToast('Le nom de l\'automatisme est requis', true);
+        return;
+      }
+
+      // Validate at least one action
+      if (scenarioActions.length === 0) {
+        showToast('Au moins une action est requise', true);
+        return;
+      }
+
+      // Validate action fields are filled
+      for (let i = 0; i < scenarioActions.length; i++) {
+        const action = scenarioActions[i];
+        if (['play_audio', 'play_music'].includes(action.type) && !action.file) {
+          showToast(`Action ${i + 1}: Veuillez sélectionner un fichier audio`, true);
+          return;
+        }
+        if (action.type === 'mqtt_cmd' && (!action.propId || !action.command)) {
+          showToast(`Action ${i + 1}: Prop et commande sont requis pour MQTT`, true);
+          return;
+        }
+      }
 
       const trigger = { type: triggerType };
       if (['prop_solved', 'sensor_triggered'].includes(triggerType)) {
         trigger.propId = document.getElementById('scenarioTriggerPropId').value;
+        // Validate propId is selected
+        if (!trigger.propId) {
+          showToast('Veuillez sélectionner un prop', true);
+          return;
+        }
       }
       if (triggerType === 'sensor_triggered') {
         trigger.sensorId = document.getElementById('scenarioTriggerSensorId').value;
+        // Validate sensorId is selected
+        if (!trigger.sensorId) {
+          showToast('Veuillez sélectionner un capteur', true);
+          return;
+        }
       }
       if (triggerType === 'timer') {
         const mins = parseInt(document.getElementById('scenarioTriggerMinutes').value) || 0;
         const secs = parseInt(document.getElementById('scenarioTriggerSeconds').value) || 0;
         trigger.atElapsedMs = (mins * 60 + secs) * 1000;
+        // Validate timer is not zero
+        if (trigger.atElapsedMs === 0) {
+          showToast('Le temps doit être supérieur à 0', true);
+          return;
+        }
       }
 
       const scenarioData = {
-        name: document.getElementById('scenarioName').value.trim(),
+        name: scenarioName,
         enabled: document.getElementById('scenarioEnabled').value === 'true',
         trigger,
         actions: scenarioActions
@@ -2545,23 +2615,28 @@
       }
 
       empty.style.display = 'none';
-      const subfolder = tbodyId === 'musicList' ? 'music' : 'effects';
+      const isMusic = tbodyId === 'musicList';
+      const subfolder = isMusic ? 'music' : 'effects';
 
       tbody.innerHTML = items.map(s => {
-        const roleBadge = s.role ? `<span class="role-badge">${s.role}</span>` : '';
-        return `
-          <tr>
-            <td>
-              <button class="media-preview-btn" onclick="togglePreview('/media/${subfolder}/${s.filename}', this)" title="Ecouter">&#9654;</button>
-            </td>
-            <td>${s.name}${roleBadge}</td>
+        const audioUrl = `/media/${subfolder}/${s.filename}`;
+        const roleLabels = { victory: 'Victoire', defeat: 'Défaite' };
+        const roleBadge = !isMusic && s.role ? `<span class="role-badge">${roleLabels[s.role] || s.role}</span>` : '';
+        const roleColumn = isMusic ? '' : `
             <td>
               <select onchange="setMediaRole('${s.key}', this.value)" style="font-size:12px;padding:4px;background:#1a1a2e;color:#ccc;border:1px solid #444;border-radius:4px;">
                 <option value="" ${!s.role ? 'selected' : ''}>Aucun</option>
                 <option value="victory" ${s.role === 'victory' ? 'selected' : ''}>Victoire</option>
                 <option value="defeat" ${s.role === 'defeat' ? 'selected' : ''}>Defaite</option>
               </select>
+            </td>`;
+        return `
+          <tr>
+            <td style="white-space:nowrap;">
+              <button class="media-preview-btn" onclick="togglePreview('${audioUrl}', this)" title="Ecouter">&#9654;</button>
+              <span class="media-duration" data-url="${audioUrl}" style="color:#888;font-size:12px;margin-left:6px;">--:--</span>
             </td>
+            <td>${s.name}${roleBadge}</td>${roleColumn}
             <td>
               <button class="btn-secondary btn-small" onclick="promptRenameMedia('${s.key}', '${s.name.replace(/'/g, "\\'")}')">Renommer</button>
               <button class="btn-danger btn-small" onclick="confirmDeleteMedia('${s.key}', '${s.name.replace(/'/g, "\\'")}')">Supprimer</button>
@@ -2569,6 +2644,32 @@
           </tr>
         `;
       }).join('');
+
+      // Load durations for all tracks
+      loadMediaDurations();
+    }
+
+    function loadMediaDurations() {
+      document.querySelectorAll('.media-duration').forEach(span => {
+        const url = span.dataset.url;
+        if (!url) return;
+        const audio = new Audio();
+        audio.preload = 'metadata';
+        audio.onloadedmetadata = () => {
+          span.textContent = formatDuration(audio.duration);
+        };
+        audio.onerror = () => {
+          span.textContent = '--:--';
+        };
+        audio.src = url;
+      });
+    }
+
+    function formatDuration(seconds) {
+      if (!isFinite(seconds)) return '--:--';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
     function togglePreview(url, btn) {

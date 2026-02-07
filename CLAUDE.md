@@ -258,6 +258,16 @@ npm start            # Production start
 
 ## Recent Changes
 
+### Admin UI Improvements (Latest)
+- **Audio tab**: Removed role dropdown for music tracks (roles only apply to effects), added track duration display next to play button
+- **Role badges**: Now display French labels ("Victoire" / "Défaite") instead of raw values
+- **Toast notifications**: Moved from bottom-right to top-center with shadow for better visibility
+- **Add buttons**: "Ajouter un Prop" and "Ajouter un Automatisme" buttons moved to top of their respective tabs
+- **Input validation**:
+  - Prop form: name required, propId format validation (alphanumeric/hyphens/underscores only), duplicate sensor ID check
+  - Piece form: name required
+  - Scenario form: name required, at least one action required, prop/sensor selection required for relevant triggers, timer must be > 0, audio actions require file selection, MQTT actions require prop and command
+
 ### Pièces (Physical Rooms) Feature
 - **Data model**: `pieces` array in `room-config.json` with `{ id, name, order }`
 - **Props**: Each prop has optional `pieceId` field linking to a pièce
