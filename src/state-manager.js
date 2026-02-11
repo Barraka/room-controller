@@ -52,19 +52,28 @@ export function createStateManager(config, configPath) {
   };
 
   // Load session history from file
+  const MAX_HISTORY = 500;
   let sessionHistory = [];
-  if (existsSync(HISTORY_FILE)) {
-    try {
-      sessionHistory = JSON.parse(readFileSync(HISTORY_FILE, 'utf-8'));
-      console.log(`[State] Loaded ${sessionHistory.length} sessions from history`);
-    } catch (err) {
-      console.error('[State] Failed to load session history:', err.message);
+  function loadHistory() {
+    if (existsSync(HISTORY_FILE)) {
+      try {
+        sessionHistory = JSON.parse(readFileSync(HISTORY_FILE, 'utf-8'));
+        console.log(`[State] Loaded ${sessionHistory.length} sessions from history`);
+      } catch (err) {
+        console.error('[State] Failed to load session history:', err.message);
+        sessionHistory = [];
+      }
     }
   }
+  loadHistory();
 
-  // Save session history to file
+  // Save session history to file (with pruning)
   function saveHistory() {
     try {
+      // Keep only the most recent sessions
+      if (sessionHistory.length > MAX_HISTORY) {
+        sessionHistory = sessionHistory.slice(-MAX_HISTORY);
+      }
       writeFileSync(HISTORY_FILE, JSON.stringify(sessionHistory, null, 2));
     } catch (err) {
       console.error('[State] Failed to save session history:', err.message);
@@ -337,6 +346,10 @@ export function createStateManager(config, configPath) {
       if (!session.active) {
         return { success: false, error: 'No active session' };
       }
+      const validResults = ['victory', 'defeat'];
+      if (!validResults.includes(result)) {
+        return { success: false, error: `Invalid result: must be "victory" or "defeat"` };
+      }
 
       const now = Date.now();
 
@@ -429,6 +442,7 @@ export function createStateManager(config, configPath) {
       };
 
       console.log('[State] Session aborted');
+      emit('session_ended', { result: 'abort', timestamp: Date.now() });
       return { success: true, session: this.getSession() };
     },
 
@@ -510,6 +524,11 @@ export function createStateManager(config, configPath) {
     // ─────────────────────────────────────────────────────────
     // Config reload (hot reload without restart)
     // ─────────────────────────────────────────────────────────
+
+    // Reload session history from disk (used after import)
+    reloadHistory() {
+      loadHistory();
+    },
 
     // Subscribe to state events (used by scenario engine)
     onEvent(fn) {

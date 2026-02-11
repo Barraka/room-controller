@@ -21,7 +21,12 @@ for (const sub of ['music', 'effects', 'assets']) {
 // Media index helpers
 function readMediaIndex() {
   if (!existsSync(MEDIA_INDEX)) return { sounds: [], assets: {} };
-  return JSON.parse(readFileSync(MEDIA_INDEX, 'utf-8'));
+  try {
+    return JSON.parse(readFileSync(MEDIA_INDEX, 'utf-8'));
+  } catch (err) {
+    console.error('[Admin] Corrupt media-index.json, resetting:', err.message);
+    return { sounds: [], assets: {} };
+  }
 }
 function writeMediaIndex(index) {
   writeFileSync(MEDIA_INDEX, JSON.stringify(index, null, 2));
@@ -239,6 +244,11 @@ export function createAdminServer(port, stateManager, scenarioEngine = null) {
   // Reload config without restart (hot reload)
   app.post('/api/reload', (req, res) => {
     try {
+      const session = stateManager.getSession();
+      if (session.active) {
+        return res.status(409).json({ error: 'Cannot reload config during active session' });
+      }
+
       const config = JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
       const result = stateManager.reloadConfig(config);
 
@@ -269,6 +279,11 @@ export function createAdminServer(port, stateManager, scenarioEngine = null) {
   // Save full config (batch save from admin UI)
   app.put('/api/config', (req, res) => {
     try {
+      const session = stateManager.getSession();
+      if (session.active) {
+        return res.status(409).json({ error: 'Cannot save config during active session' });
+      }
+
       const newConfig = req.body;
 
       // Validate required fields
@@ -1048,6 +1063,7 @@ export function createAdminServer(port, stateManager, scenarioEngine = null) {
       const historyEntry = entries.find(e => e.entryName === 'session-history.json');
       if (historyEntry) {
         writeFileSync(HISTORY_FILE, historyEntry.getData().toString('utf-8'));
+        stateManager.reloadHistory();
       }
 
       // Clean up temp file

@@ -54,6 +54,16 @@ const shutdown = () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
+process.on('unhandledRejection', (reason) => {
+  console.error('[Server] Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught exception:', err);
+  // Give time to flush logs, then exit
+  setTimeout(() => process.exit(1), 1000);
+});
+
 console.log(`[Server] Room Controller started`);
 console.log(`[Server] WebSocket server listening on port ${config.websocket.port}`);
 console.log(`[Server] MQTT connecting to ${config.mqtt.broker}`);

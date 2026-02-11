@@ -13,8 +13,27 @@ export function createWebSocketServer(config, stateManager) {
   // MQTT client reference (set after initialization to avoid circular deps)
   let mqttClient = null;
 
+  // Heartbeat: detect dead connections every 30 seconds
+  const HEARTBEAT_INTERVAL = 30000;
+  const heartbeat = setInterval(() => {
+    for (const client of clients) {
+      if (client.isAlive === false) {
+        console.log('[WS] Terminating dead connection');
+        clients.delete(client);
+        client.terminate();
+        continue;
+      }
+      client.isAlive = false;
+      client.ping();
+    }
+  }, HEARTBEAT_INTERVAL);
+
+  wss.on('close', () => clearInterval(heartbeat));
+
   wss.on('connection', (ws) => {
     console.log('[WS] Dashboard connected');
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
     clients.add(ws);
 
     // Send hello
@@ -92,6 +111,15 @@ export function createWebSocketServer(config, stateManager) {
    */
   function handleMessage(ws, message) {
     const { type, payload } = message;
+
+    if (!type) {
+      console.warn('[WS] Received message without type');
+      return;
+    }
+    if (!payload) {
+      console.warn(`[WS] Received ${type} without payload`);
+      return;
+    }
 
     switch (type) {
       case 'cmd':

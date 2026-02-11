@@ -1,6 +1,6 @@
 {
   "name": "room-controller",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Escape room controller - MQTT to WebSocket bridge and session manager",
   "main": "src/index.js",
   "type": "module",

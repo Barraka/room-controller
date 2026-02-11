@@ -156,10 +156,17 @@ export function createMqttClient(config, stateManager, wsServer) {
     }
   }
 
+  // Validate propId contains only safe characters for MQTT topics
+  const VALID_PROP_ID = /^[a-zA-Z0-9_\-]+$/;
+
   /**
    * Send a command to a prop via MQTT
    */
   function sendCommand(propId, command, params = {}) {
+    if (!VALID_PROP_ID.test(propId)) {
+      console.error(`[MQTT] Invalid propId rejected: ${propId}`);
+      return null;
+    }
     const topic = `${baseTopic}/prop/${propId}/cmd`;
     const payload = {
       type: 'cmd',
@@ -192,7 +199,7 @@ export function createMqttClient(config, stateManager, wsServer) {
 
     // Command methods
     sendForceSolve(propId) {
-      return sendCommand(propId, 'force_solve');
+      return sendCommand(propId, 'force_solved');
     },
 
     sendReset(propId) {

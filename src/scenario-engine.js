@@ -8,6 +8,7 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
   let scenarios = config.scenarios || [];
   const firedSet = new Set(); // Track fired scenario IDs per session
   let timerInterval = null;
+  const pendingTimeouts = []; // Track delayed action timeouts for cancellation
 
   // ─────────────────────────────────────────────────────────
   // Event handling
@@ -27,6 +28,7 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
         evaluateTriggers('session_start', data);
         break;
       case 'session_ended':
+        cancelPendingActions();
         stopTimerChecks();
         evaluateTriggers('session_end', data);
         break;
@@ -120,11 +122,24 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
       const delay = action.delay || 0;
 
       if (delay > 0) {
-        setTimeout(() => executeAction(action), delay);
+        const timeoutId = setTimeout(() => {
+          // Remove from pending list once it fires
+          const idx = pendingTimeouts.indexOf(timeoutId);
+          if (idx !== -1) pendingTimeouts.splice(idx, 1);
+          executeAction(action);
+        }, delay);
+        pendingTimeouts.push(timeoutId);
       } else {
         executeAction(action);
       }
     }
+  }
+
+  function cancelPendingActions() {
+    for (const id of pendingTimeouts) {
+      clearTimeout(id);
+    }
+    pendingTimeouts.length = 0;
   }
 
   function executeAction(action) {
