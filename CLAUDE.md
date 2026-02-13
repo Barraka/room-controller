@@ -436,6 +436,19 @@ DELETE /api/media/assets/:key         # Delete asset
 
 ---
 
+## v1.1.0 — Audit Bug Fix Pass
+
+- **WebSocket heartbeat**: Added ping/pong dead connection detection (30s interval), terminates stale clients
+- **WebSocket message validation**: Rejects messages without `type` or `payload` fields
+- **MQTT propId validation**: Regex check (`/^[a-zA-Z0-9_\-]+$/`) prevents topic injection
+- **MQTT command name fix**: `force_solve` → `force_solved` to match MQTT Contract v1.0
+- **Scenario engine**: Delayed actions now tracked and cancelled on session end (prevents orphaned timeouts)
+- **State manager**: Session history capped at 500 entries (prevents unbounded growth), `endSession` validates result value, `abortSession` now emits `session_ended` event, added `reloadHistory()` method
+- **Admin server**: Corrupt `media-index.json` recovery (try/catch with reset), config reload/save blocked during active sessions, history reloaded from disk after import
+- **Process handlers**: Added `unhandledRejection` and `uncaughtException` handlers in `index.js`
+
+---
+
 ## Known Issues / TODO
 
 - ~~**No MQTT reset on session start**~~: Addressed by the two-phase arm/reset design above
