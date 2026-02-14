@@ -206,91 +206,99 @@ La diode flyback protège le MOSFET contre les pics de tension quand le maglock 
 
 ---
 
-## 12. Liste d'Achat - Salle "Magie" Complète (12 props)
+## 12. Raspberry Pi Écrans — Salle "Hollywood"
 
-### A. Microcontrôleurs (14 unités = 12 props + 2 spare)
+La salle Hollywood utilise 7 écrans pilotés par des Raspberry Pi, plus 1 Pi Room Controller (sans écran).
 
-| Équipement | Qté | Prix unitaire | Total |
-|------------|-----|---------------|-------|
-| ESP32 DevKit V1 | 14 | 6 € | 84 € |
-| Breakout board borniers à vis | 14 | 2 € | 28 € |
-| **Sous-total** | | | **~112 €** |
+### Contrainte opérationnelle
 
-### B. Modules MOSFET (12 props avec maglock/solénoïde)
+Le GM allume le système le matin **sans clavier ni souris** connectés aux Pi écrans. Chaque Pi doit :
+- Auto-login au démarrage
+- Lancer automatiquement Chromium en mode kiosk (plein écran)
+- Afficher le bon contenu sans intervention
 
-| Équipement | Qté | Prix unitaire | Total |
-|------------|-----|---------------|-------|
-| HW-548 MOSFET (pack de 3) | 5 | 5 € | 25 € |
-| **Sous-total** | | | **~25 €** |
+**Pour cette raison : 1 Pi = 1 écran.** Le dual-screen sur Pi (2 HDMI) est techniquement possible, mais pose des problèmes de fiabilité au boot (inversion d'écrans, détection erronée si un écran s'allume en retard). Récupérer nécessite un clavier — exactement ce qu'on n'a pas.
 
-> 5 packs × 3 = 15 modules (12 utilisés + 3 spare)
+### Les 7 Écrans + 1 Room Controller
 
-### C. Boîtiers et montage
+| # | Pi | Écran | Emplacement | Type de contenu | Interactif ? | Modèle Pi recommandé |
+|---|-----|-------|-------------|-----------------|-------------|---------------------|
+| 1 | Pi A | Digital Cryptex (tactile) | Zone séparée | App tactile (code 4 chiffres) | **Oui (touch)** | Pi 4 (2GB) |
+| 2 | Pi B | World Map | QG Secret | Carte du monde principale | Possible | Pi 5 (4GB) |
+| 3 | Pi C | Écran Villain | QG Secret | Vidéo / animation | Passif | Pi 4 (2GB) |
+| 4 | Pi D | Écran Tim Ferris | QG Secret | Vidéo / contenu | Passif | Pi 4 (2GB) |
+| 5 | Pi E | Écran ambiance spy | QG Secret | Texte/animations aléatoires | Passif | Pi 4 (2GB) |
+| 6 | Pi F | Écran véhicules | QG Secret | Vidéo / contenu | Passif | Pi 4 (2GB) |
+| 7 | Pi G | Écran déroulant + projecteur | Zone séparée | Vidéo / projection | Passif | Pi 4 (4GB) |
+| 8 | Pi H | *Pas d'écran* — Room Controller | Armoire technique | Node.js, MQTT, WebSocket | — | Pi 5 (4GB) |
 
-| Équipement | Qté | Prix unitaire | Total |
-|------------|-----|---------------|-------|
-| Boîtier ABS 150×100×60mm | 14 | 3 € | 42 € |
-| Presse-étoupes PG7 (lot de 10) | 2 | 3 € | 6 € |
-| Entretoises nylon M3 (lot) | 1 | 5 € | 5 € |
-| **Sous-total** | | | **~53 €** |
+### Liste d'Achat — Raspberry Pi Salle "Hollywood"
 
-### D. Alimentation centralisée
-
-| Équipement | Qté | Prix unitaire | Total |
-|------------|-----|---------------|-------|
-| Mean Well LRS-50-5 (5V 10A) | 1 | 15 € | 15 € |
-| Mean Well LRS-50-12 (12V 4.2A) | 1 | 15 € | 15 € |
-| Bornier DIN de distribution (10 voies) | 2 | 8 € | 16 € |
-| Câble 18 AWG 2-conducteurs (5m) | 1 | 5 € | 5 € |
-| **Sous-total** | | | **~51 €** |
-
-### E. Câblage
+#### A. Raspberry Pi (8 unités)
 
 | Équipement | Qté | Prix unitaire | Total |
 |------------|-----|---------------|-------|
-| Câble alarme 22 AWG 2-conducteurs (100m) | 1 | 20 € | 20 € |
-| Câble alarme 22 AWG 4-conducteurs (50m) | 1 | 18 € | 18 € |
-| Câble 20 AWG 2-conducteurs maglocks (25m) | 1 | 10 € | 10 € |
-| Connecteurs Wago 221 (lot) | 1 | 15 € | 15 € |
-| Fil 22 AWG solid-core pour câblage interne (10m) | 1 | 5 € | 5 € |
-| Câbles USB-C pour flashing initial (2m) | 2 | 5 € | 10 € |
+| Raspberry Pi 4 (2GB) | 5 | 45 € | 225 € |
+| Raspberry Pi 4 (4GB) | 1 | 60 € | 60 € |
+| Raspberry Pi 5 (4GB) | 2 | 75 € | 150 € |
+| **Sous-total** | | | **~435 €** |
+
+#### B. Stockage
+
+| Équipement | Qté | Prix unitaire | Total |
+|------------|-----|---------------|-------|
+| Carte MicroSD 32GB (Pi écrans) | 7 | 8 € | 56 € |
+| NVMe HAT + SSD 128GB (Room Controller) | 1 | 50 € | 50 € |
+| **Sous-total** | | | **~106 €** |
+
+> Les Pi écrans ne font que lire du contenu en boucle — une carte SD suffit. Seul le Room Controller a besoin d'un SSD pour la fiabilité (écritures fréquentes : logs, sessions, analytics).
+
+#### C. Alimentations
+
+| Équipement | Qté | Prix unitaire | Total |
+|------------|-----|---------------|-------|
+| Alimentation Pi 4 USB-C 15W | 6 | 10 € | 60 € |
+| Alimentation Pi 5 USB-C 27W | 2 | 15 € | 30 € |
+| **Sous-total** | | | **~90 €** |
+
+#### D. Câbles et connectique
+
+| Équipement | Qté | Prix unitaire | Total |
+|------------|-----|---------------|-------|
+| Câble Micro-HDMI → HDMI (Pi 4) | 6 | 5 € | 30 € |
+| Câble Micro-HDMI → HDMI (Pi 5) | 1 | 5 € | 5 € |
+| Câbles Ethernet Cat6 | 3 | 5 € | 15 € |
+| **Sous-total** | | | **~50 €** |
+
+#### E. Boîtiers
+
+| Équipement | Qté | Prix unitaire | Total |
+|------------|-----|---------------|-------|
+| Boîtier Pi 4 (refroidissement passif) | 6 | 8 € | 48 € |
+| Boîtier Pi 5 (Active Cooler) | 2 | 15 € | 30 € |
 | **Sous-total** | | | **~78 €** |
 
-### F. Étiquetage
+#### F. Réseau et infrastructure
 
 | Équipement | Qté | Prix unitaire | Total |
 |------------|-----|---------------|-------|
-| Étiquettes plastifiées ou P-Touch | 1 | 10 € | 10 € |
-| **Sous-total** | | | **~10 €** |
+| Routeur WiFi (TP-Link Archer AX23) | 1 | 60 € | 60 € |
+| Onduleur APC Back-UPS 400VA | 1 | 50 € | 50 € |
+| **Sous-total** | | | **~110 €** |
 
-### Récapitulatif Salle "Magie"
+### Récapitulatif Pi — Salle "Hollywood"
 
 | Catégorie | Total |
 |-----------|-------|
-| A. Microcontrôleurs | 112 € |
-| B. MOSFET | 25 € |
-| C. Boîtiers | 53 € |
-| D. Alimentation centralisée | 51 € |
-| E. Câblage | 78 € |
-| F. Étiquetage | 10 € |
-| **TOTAL salle "Magie"** | **~329 €** |
+| A. Raspberry Pi (8 unités) | 435 € |
+| B. Stockage | 106 € |
+| C. Alimentations | 90 € |
+| D. Câbles et connectique | 50 € |
+| E. Boîtiers | 78 € |
+| F. Réseau et infrastructure | 110 € |
+| **TOTAL Pi salle "Hollywood"** | **~869 €** |
 
-> *Hors capteurs (RFID, aimants, boutons) et actionneurs (maglocks, solénoïdes) — ceux-ci dépendent des puzzles spécifiques de chaque prop.*
-
----
-
-## 13. Liste d'Achat - Room Controller Complet
-
-| Équipement | Qté | Prix unitaire | Total |
-|------------|-----|---------------|-------|
-| Raspberry Pi 5 (8GB) | 1 | 90 € | 90 € |
-| NVMe HAT + SSD 128GB | 1 | 50 € | 50 € |
-| Alimentation Pi 5 27W | 1 | 15 € | 15 € |
-| Boîtier Active Cooler | 1 | 15 € | 15 € |
-| Routeur TP-Link Archer AX23 | 1 | 60 € | 60 € |
-| Câbles Ethernet | 3 | 5 € | 15 € |
-| Onduleur APC 400VA | 1 | 50 € | 50 € |
-| **TOTAL** | | | **~295 €** |
+> *Hors écrans/moniteurs eux-mêmes, tactile pour le Cryptex, projecteur, et écran déroulant — ces éléments dépendent du design scénographique.*
 
 ---
 
