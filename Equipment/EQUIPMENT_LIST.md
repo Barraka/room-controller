@@ -24,12 +24,28 @@ Le Room Controller est le cerveau du système. Il exécute le serveur Node.js, l
 
 ---
 
-## 2. Réseau
+## 2. PC Game Master (GM PC)
+
+Le PC du Game Master affiche le dashboard et diffuse **tout l'audio de la salle** (musique, effets sonores, indices, victoire/défaite) via jack 3.5mm → ampli → enceintes.
+
+| Équipement | Description | Modèle | Prix |
+|------------|-------------|--------|------|
+| **Mini PC** | PC dédié au GM Dashboard + audio | **Bmax B4** (Intel N95, 12GB LPDDR5, 256GB SSD, 2× HDMI 2.0, Windows 11 Pro) | ~182 € |
+| **Moniteur GM** | Écran principal du GM | 22" Full HD | ~100 € |
+| **Clavier + souris** | Périphériques sans fil | Combo wireless | ~25 € |
+
+> **Note :** Le Bmax B4 a une sortie jack 3.5mm intégrée — pas besoin de DAC USB externe.
+
+**Fournisseur :** AliExpress (Bmax B4)
+
+---
+
+## 3. Réseau
 
 | Équipement | Description | Modèle recommandé | Prix estimé |
 |------------|-------------|-------------------|-------------|
-| **Routeur WiFi** | Réseau pour props + laptop GM | TP-Link Archer AX23 | 60 € |
-| **Câbles Ethernet** | Connexion filaire Pi + laptop GM | Cat6, diverses longueurs | 10-20 € |
+| **Routeur WiFi** | Réseau pour props + GM PC | TP-Link Archer AX23 | 60 € |
+| **Câbles Ethernet** | Connexion filaire Pi + GM PC | Cat6, diverses longueurs | 10-20 € |
 
 **Configuration importante :**
 - Utiliser la bande 2.4 GHz pour les ESP32
@@ -38,7 +54,7 @@ Le Room Controller est le cerveau du système. Il exécute le serveur Node.js, l
 
 ---
 
-## 3. Alimentation Centralisée
+## 4. Alimentation Centralisée
 
 ### 5V — ESP32 (Recommandé)
 

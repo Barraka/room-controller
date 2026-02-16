@@ -12,7 +12,7 @@ This document provides hardware recommendations for deploying the Escape Yoursel
 │                                                                  │
 │   [ESP32 Props] ──WiFi──► [Router] ──Ethernet──► [Room Controller]
 │                                          │
-│                                          └──Ethernet──► [GM Laptop]
+│                                          └──Ethernet──► [GM PC]
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -82,7 +82,7 @@ For a typical escape room, **Raspberry Pi 5 with NVMe SSD** offers the best bala
 
 ## 2. WiFi Router
 
-The router provides the WiFi network for ESP32 props and wired connections to the Room Controller and GM laptop.
+The router provides the WiFi network for ESP32 props and wired connections to the Room Controller and GM PC.
 
 ### Requirements
 
@@ -120,7 +120,7 @@ The router provides the WiFi network for ESP32 props and wired connections to th
 
 4. **Reserve static IPs**: Configure DHCP reservations for:
    - Room Controller (e.g., 192.168.1.10)
-   - GM laptop (e.g., 192.168.1.20)
+   - GM PC (e.g., 192.168.1.20)
    - Each ESP32 prop
 
 5. **Disable power saving**: Some routers have "green" modes that can cause latency.
@@ -131,24 +131,38 @@ The router provides the WiFi network for ESP32 props and wired connections to th
 
 ---
 
-## 3. GM Laptop
+## 3. GM PC (Bmax B4 Mini PC)
 
-The GM uses a laptop or desktop to access the GM Dashboard via web browser.
+The GM uses a dedicated mini PC to access the GM Dashboard via web browser. This machine is also the **audio source** for the entire escape room — background music, sound effects, hint sounds, victory/defeat tracks — connected to an amplifier via 3.5mm jack → RCA.
 
-### Minimum Requirements
+### Specs (Ordered)
 
-| Spec | Requirement |
-|------|-------------|
-| **Browser** | Chrome, Firefox, or Edge (modern version) |
-| **Display** | 1920x1080 or higher |
-| **Network** | Ethernet preferred (more reliable than WiFi) |
-| **Audio output** | For sound effects and music |
+| Spec | Detail |
+|------|--------|
+| **Model** | Bmax B4 |
+| **CPU** | Intel N95 (4 cores, up to 3.4 GHz) |
+| **RAM** | 12 GB LPDDR5 |
+| **Storage** | 256 GB SSD |
+| **Display outputs** | 2× HDMI 2.0 (GM screen + player-facing screen) |
+| **Audio** | 3.5mm jack → amplifier → room speakers |
+| **Network** | Ethernet (Gigabit) + WiFi |
+| **OS** | Windows 11 Pro |
+| **Price** | ~182 € (AliExpress) |
 
-### Recommendations
+### Why This Choice
 
-- Any modern laptop with Ethernet port (or USB-C/Thunderbolt dock)
-- Second monitor optional (for player-facing secondary screen)
-- Dedicated speakers or audio system for in-room sound
+- **Dual HDMI**: one for GM dashboard, one for player-facing secondary screen (timer + hints)
+- **Windows 11 Pro**: best audio reliability (Chrome + WASAPI), Group Policy to tame Windows Update
+- **3.5mm jack**: direct connection to amplifier, no USB DAC needed
+- **12 GB RAM**: comfortable headroom for Chrome + audio
+- **Price**: cheapest option that ticks all boxes (cheaper than Pi 5 kit + USB DAC)
+
+### Setup Notes
+
+- Set Active Hours (09:00–23:00) and Group Policy "No auto-restart with logged-on users" to prevent surprise reboots
+- Mark network as metered to block background updates during sessions
+- Chrome auto-launches the GM Dashboard URL on startup
+- See `Equipment/GM_PC_COMPARISON.md` for full Windows vs Ubuntu analysis
 
 ---
 
@@ -242,7 +256,7 @@ Internet ─┬─► [Main Router] ─► to building network
           └─► [Escape Room Router] (isolated network)
                     │
                     ├── Ethernet ──► Room Controller (192.168.1.10)
-                    ├── Ethernet ──► GM Laptop (192.168.1.20)
+                    ├── Ethernet ──► GM PC (192.168.1.20)
                     │
                     └── WiFi ──► ESP32 Props
                                   ├── prop-coffre (192.168.1.101)
@@ -256,7 +270,7 @@ Internet ─┬─► [Main Router] ─► to building network
 |--------|------------|
 | Router | 192.168.1.1 |
 | Room Controller | 192.168.1.10 |
-| GM Laptop | 192.168.1.20 |
+| GM PC | 192.168.1.20 |
 | Props | 192.168.1.101 - 192.168.1.199 |
 
 ### Isolation Considerations
@@ -547,7 +561,7 @@ mosquitto_pub -t "test" -m "hello"
 curl http://localhost:3002/api/props
 ```
 
-From the GM laptop browser:
+From the GM PC browser:
 - Admin UI: `http://192.168.1.10:3002`
 - Dashboard: `http://192.168.1.10:5173` (if serving built dashboard)
 
@@ -582,12 +596,12 @@ Add this as another systemd service if needed.
 - [ ] Router configured with static IPs
 - [ ] WiFi SSID/password set (2.4 GHz, fixed channel)
 - [ ] All ESP32 props connect to WiFi
-- [ ] GM laptop can access Dashboard (http://192.168.1.10:5173)
-- [ ] GM laptop can access Admin UI (http://192.168.1.10:3002)
+- [ ] GM PC can access Dashboard (http://192.168.1.10:5173)
+- [ ] GM PC can access Admin UI (http://192.168.1.10:3002)
 - [ ] Props appear online in Admin UI
 - [ ] SSH access works from dev machine (preferably passwordless)
 - [ ] VNC access works from dev machine (optional)
-- [ ] Audio plays correctly on GM laptop
+- [ ] Audio plays correctly on GM PC
 - [ ] Test full session (start, hints, solve props, end)
 
 ---
@@ -602,4 +616,4 @@ Add this as another systemd service if needed.
 | Cables/misc | ~20 EUR | ~30 EUR | ~50 EUR |
 | **Total** | **~120 EUR** | **~290 EUR** | **~530 EUR** |
 
-*Prices are approximate and may vary. Does not include GM laptop or ESP32 props.*
+*Prices are approximate and may vary. Does not include GM PC or ESP32 props.*
