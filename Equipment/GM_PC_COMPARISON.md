@@ -2,7 +2,7 @@
 
 **Context:** The GM PC runs the GM Dashboard (React web app) in a browser. It is the audio source for the entire escape room — background music, sound effects, hint sounds, victory/defeat tracks — connected to an amplifier via 3.5mm (or USB DAC) to RCA.
 
-In **Complet (full) mode**, the GM PC is just a browser client. The Room Controller Pi (192.168.1.99) runs everything (Node.js, MQTT, WebSocket, media storage). The GM PC connects to `http://<room-controller-ip>:<port>` and displays the dashboard. No server-side software runs on the GM PC.
+In **Complet (full) mode**, the GM PC is just a browser client. The Room Controller Pi (192.168.1.10) runs everything (Node.js, MQTT, WebSocket, media storage). The GM PC connects to `http://<room-controller-ip>:<port>` and displays the dashboard. No server-side software runs on the GM PC.
 
 In **Autonome (standalone) mode**, the GM PC stores everything locally in the browser's IndexedDB — media, hints, session history, settings. The workload remains light (IndexedDB reads/writes are fast local I/O).
 

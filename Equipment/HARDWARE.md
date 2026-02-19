@@ -314,7 +314,7 @@ sudo systemctl start ssh
 
 **From your dev machine (Windows/Mac/Linux):**
 ```bash
-ssh manu@192.168.1.99
+ssh escape@192.168.1.10
 ```
 
 #### Passwordless SSH (Recommended)
@@ -326,17 +326,17 @@ Set up SSH key authentication to avoid typing the password every time:
 ssh-keygen -t ed25519
 
 # 2. Copy your public key to the Pi
-ssh-copy-id manu@192.168.1.99
+ssh-copy-id escape@192.168.1.10
 # (enter the Pi password one last time)
 
 # 3. Verify passwordless login
-ssh manu@192.168.1.99
+ssh escape@192.168.1.10
 # Should connect without asking for password
 ```
 
-> **Note:** On Windows, if `ssh-copy-id` is not available, you can manually append your public key:
+> **Note:** On Windows PowerShell, `ssh-copy-id` is not available. Use this instead:
 > ```powershell
-> type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh manu@192.168.1.99 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+> Get-Content C:\Users\Manu\.ssh\id_ed25519.pub | ssh escape@192.168.1.10 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 > ```
 
 ### VNC (Remote Desktop)
@@ -347,12 +347,12 @@ VNC provides a full graphical desktop view of the Pi. Useful for debugging or wh
 
 **Connecting from Windows:**
 1. Install a VNC viewer (e.g., RealVNC Viewer, TightVNC, or UltraVNC)
-2. Connect to: `192.168.1.99:5900`
+2. Connect to: `192.168.1.10:5900`
 3. Log in with the Pi credentials (same username/password as SSH)
 
 **Connecting from Mac:**
 1. Open Finder > Go > Connect to Server (Cmd+K)
-2. Enter: `vnc://192.168.1.99:5900`
+2. Enter: `vnc://192.168.1.10:5900`
 
 **If VNC is not running (Pi OS Lite or disabled):**
 ```bash
@@ -471,7 +471,7 @@ After=network.target mosquitto.service
 
 [Service]
 Type=simple
-User=pi
+User=escape
 WorkingDirectory=/opt/room-controller
 ExecStart=/usr/bin/node src/index.js
 Restart=always
@@ -482,7 +482,7 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 ```
 
-> **Note:** Change `User=pi` to your username if different (e.g., `User=ubuntu` on Ubuntu).
+> **Note:** Change `User=escape` to your username if different (e.g., `User=ubuntu` on Ubuntu).
 
 Enable and start the service:
 
@@ -575,7 +575,7 @@ cd escapeRoomManager
 npm run build
 
 # Copy dist folder to Room Controller
-scp -r dist/* pi@192.168.1.10:/opt/room-controller/public/
+scp -r dist/* escape@192.168.1.10:/opt/room-controller/public/
 ```
 
 Or install a simple static server on the Room Controller:
