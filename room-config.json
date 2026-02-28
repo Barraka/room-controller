@@ -1,276 +1,52 @@
 {
   "room": {
-    "id": "magie",
-    "name": "Salle Magie",
-    "site": "default"
+    "id": "hollywood",
+    "name": "Hollywood",
+    "site": "ey1"
   },
   "mqtt": {
     "broker": "mqtt://localhost:1883",
-    "baseTopic": "ey/default/magie"
+    "baseTopic": "ey/ey1/hollywood"
   },
   "websocket": {
-    "port": 3016
+    "port": 3001
   },
   "admin": {
-    "port": 3017
+    "port": 3002
   },
   "dashboard": {
-    "hints": [
-      "Check under the rug.",
-      "Try using the UV flashlight. ddd",
-      "Count the number of objects in the room.",
-      "What’s the third digit of the keypad?",
-      "Look for a repeating pattern. fff",
-      "Something's hidden behind the poster.",
-      "Maybe the colors are a clue.",
-      "A new clue."
-    ],
-    "roomDuration": 3840
+    "hints": [],
+    "roomDuration": 3600
   },
   "props": [
     {
-      "propId": "qsdfqsdf",
-      "name": "Etape 2",
-      "type": "button",
-      "pieceId": "piece-1770149833278",
+      "propId": "hollywood_cryptex",
+      "name": "Cryptex",
+      "type": "keypad",
       "order": 1,
-      "sensors": [
-        {
-          "sensorId": "qsdfqsdf",
-          "label": "qsdfqsdf"
-        },
-        {
-          "sensorId": "qsdfqsdfrr",
-          "label": "qsdfqsdf"
-        }
-      ]
+      "sensors": []
     },
     {
-      "propId": "qdsfqsdf",
-      "name": "Etape 1 b",
-      "type": "button",
-      "pieceId": "piece-1770149833278",
-      "order": 2,
-      "sensors": [
-        {
-          "sensorId": "sensor1",
-          "label": "Capteur 1"
-        }
-      ]
-    },
-    {
-      "propId": "magie_roueFortune",
-      "name": "Roue de la Fortune",
-      "type": "magnet",
-      "pieceId": "piece-1770149833278",
-      "order": 2,
-      "sensors": [
-        {
-          "sensorId": "magnet1",
-          "label": "Aimant principal"
-        },
-        {
-          "sensorId": "magnet2",
-          "label": "Aimant secondaire"
-        }
-      ]
-    },
-    {
-      "propId": "unique3",
-      "name": "test3",
-      "type": "proximity",
-      "pieceId": "piece-1770149842319",
+      "propId": "hollywood_shaker",
+      "name": "Shaker",
+      "type": "accelerometer",
       "order": 3,
-      "sensors": [
-        {
-          "sensorId": "magnet1",
-          "label": "Aimant un"
-        }
-      ]
-    },
-    {
-      "propId": "qsfqsef",
-      "name": "etape trois",
-      "type": "magnet",
-      "pieceId": "piece-1770149850606",
-      "order": 4,
-      "sensors": [
-        {
-          "sensorId": "b&",
-          "label": "bbbb"
-        },
-        {
-          "sensorId": "b2",
-          "label": "bbb"
-        },
-        {
-          "sensorId": "dgfdf",
-          "label": "qsdgf"
-        },
-        {
-          "sensorId": "sdfsd",
-          "label": "dfgdf"
-        },
-        {
-          "sensorId": "sdfqsdf",
-          "label": "dsgfds"
-        }
-      ]
-    },
-    {
-      "propId": "qsfdqsdfqsd",
-      "name": "puzzle4",
-      "type": "magnet",
-      "pieceId": "piece-1770149850606",
-      "order": 5,
-      "sensors": [
-        {
-          "sensorId": "qsdf",
-          "label": "sdfdsf"
-        },
-        {
-          "sensorId": "sdfqsdf",
-          "label": "qsdfqsfd"
-        }
-      ]
-    },
-    {
-      "propId": "aaa",
-      "name": "aaa",
-      "type": "rfid",
-      "pieceId": "piece-1770149866921",
-      "order": 6,
-      "sensors": []
-    },
-    {
-      "propId": "bbb",
-      "name": "bbb",
-      "type": "rfid",
-      "pieceId": "piece-1770149866921",
-      "order": 7,
-      "sensors": []
-    },
-    {
-      "propId": "ccc",
-      "name": "cccv",
-      "type": "",
-      "pieceId": "piece-1770149866921",
-      "order": 8,
-      "sensors": []
-    },
-    {
-      "propId": "ddd",
-      "name": "ddd",
-      "type": "",
-      "pieceId": "piece-1770149866921",
-      "order": 9,
-      "sensors": []
-    },
-    {
-      "propId": "eee",
-      "name": "eee",
-      "type": "",
-      "pieceId": "piece-1770149866921",
-      "order": 10,
-      "sensors": []
-    },
-    {
-      "propId": "fff",
-      "name": "fff",
-      "type": "",
-      "pieceId": "piece-1770149866921",
-      "order": 11,
-      "sensors": []
-    },
-    {
-      "propId": "ggg",
-      "name": "ggg",
-      "type": "",
-      "pieceId": "piece-1770149866921",
-      "order": 12,
-      "sensors": []
+      "sensors": [{ "sensorId": "shake", "label": "Secousse" }]
     }
   ],
-  "pieces": [
-    {
-      "id": "piece-1770149833278",
-      "name": "Ruelle",
-      "order": 1
-    },
-    {
-      "id": "piece-1770149842319",
-      "name": "Passage",
-      "order": 2
-    },
-    {
-      "id": "piece-1770149850606",
-      "name": "Salle Des Potions",
-      "order": 3
-    },
-    {
-      "id": "piece-1770149866921",
-      "name": "Serre",
-      "order": 4
-    }
-  ],
-  "scenarios": [
-    {
-      "name": "test",
-      "enabled": true,
-      "trigger": {
-        "type": "prop_solved",
-        "propId": "qsdfqsdf"
-      },
-      "actions": [
-        {
-          "type": "play_audio",
-          "file": "1769873659829.mp3",
-          "delay": 0
-        }
-      ],
-      "id": "sc-1770066646966-ls6p"
-    }
-  ],
+  "pieces": [],
+  "scenarios": [],
   "sensorTypes": [
-    {
-      "id": "rfid",
-      "label": "RFID"
-    },
-    {
-      "id": "magnet",
-      "label": "Aimant"
-    },
-    {
-      "id": "button",
-      "label": "Bouton"
-    },
-    {
-      "id": "proximity",
-      "label": "Proximité"
-    },
-    {
-      "id": "light",
-      "label": "Lumière"
-    },
-    {
-      "id": "weight",
-      "label": "Poids"
-    },
-    {
-      "id": "contact",
-      "label": "Contact"
-    },
-    {
-      "id": "laser",
-      "label": "Laser"
-    },
-    {
-      "id": "touch",
-      "label": "Tactile"
-    },
-    {
-      "id": "keypad",
-      "label": "Clavier"
-    }
+    { "id": "rfid", "label": "RFID" },
+    { "id": "magnet", "label": "Aimant" },
+    { "id": "button", "label": "Bouton" },
+    { "id": "proximity", "label": "Proximité" },
+    { "id": "light", "label": "Lumière" },
+    { "id": "weight", "label": "Poids" },
+    { "id": "contact", "label": "Contact" },
+    { "id": "laser", "label": "Laser" },
+    { "id": "touch", "label": "Tactile" },
+    { "id": "keypad", "label": "Clavier" },
+    { "id": "accelerometer", "label": "Accéléromètre" }
   ]
 }
