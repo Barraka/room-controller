@@ -111,6 +111,9 @@ export function createMqttClient(config, stateManager, wsServer) {
     console.log(`[MQTT] Event from ${propId}: ${payload.action}`);
 
     // Forward event to dashboards
+    // Extra data may be in payload.meta (contract spec) or at top level (ESP32 actual)
+    const { type: _t, propId: _p, action: _a, source: _s, timestamp: _ts, meta, ...extraFields } = payload;
+    const details = meta || (Object.keys(extraFields).length > 0 ? extraFields : {});
     wsServer.broadcast({
       type: 'event',
       timestamp: Date.now(),
@@ -118,7 +121,7 @@ export function createMqttClient(config, stateManager, wsServer) {
         propId,
         action: payload.action,
         source: payload.source,
-        details: payload.meta || {}
+        details
       }
     });
 
