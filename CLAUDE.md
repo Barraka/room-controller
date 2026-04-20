@@ -165,13 +165,13 @@ POST /api/import              # Import room .zip (multipart upload, field: "arch
 ```json
 {
   "room": {
-    "id": "salle-1",
-    "name": "Le Manoir Hanté",
-    "site": "paris"
+    "id": "hollywood",
+    "name": "Hollywood",
+    "site": "ey1"
   },
   "mqtt": {
     "broker": "mqtt://localhost:1883",
-    "baseTopic": "ey/paris/salle-1"
+    "baseTopic": "ey/ey1/hollywood"
   },
   "websocket": {
     "port": 3001
@@ -185,18 +185,17 @@ POST /api/import              # Import room .zip (multipart upload, field: "arch
   },
   "props": [
     {
-      "propId": "coffre-5-sceaux",
-      "name": "Coffre aux 5 Sceaux",
+      "propId": "hollywood_cryptex",
+      "name": "Cryptex",
+      "type": "keypad",
       "order": 1,
-      "sensors": [
-        { "sensorId": "rfid-1", "label": "Sceau Rouge" }
-      ]
+      "sensors": []
     }
   ]
 }
 ```
 
-**Important**: `propId` must match the ESP32's configured propId exactly.
+**Important**: `propId` must match the prop's configured propId exactly.
 
 ---
 
@@ -204,7 +203,7 @@ POST /api/import              # Import room .zip (multipart upload, field: "arch
 
 ### Prop → Dashboard (status update)
 
-1. ESP32 publishes to `ey/paris/salle-1/prop/coffre-5-sceaux/status`
+1. Prop publishes to `ey/ey1/hollywood/prop/hollywood_cryptex/status`
 2. MQTT client receives message
 3. State manager updates prop state
 4. WebSocket server broadcasts `prop_update` to dashboards
@@ -372,9 +371,16 @@ Event-driven automation system that reacts to game events and triggers actions.
 | `play_music` | `file`, `delay` | WS → dashboard plays background track |
 | `mqtt_cmd` | `propId`, `command`, `payload`, `delay` | MQTT command to ESP32 |
 
+### Scenario Fields
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `repeatable` | `boolean` | `false` | If true, scenario can fire multiple times per session (skips `firedSet`) |
+| `cooldownMs` | `number` | `0` | Minimum ms between repeated fires (only used when `repeatable: true`, 0 = no cooldown) |
+
 ### Key Behaviors
-- Each scenario fires **once per session** (tracked in `firedSet`)
-- `firedSet` resets on `session_started`
+- By default, each scenario fires **once per session** (tracked in `firedSet`)
+- **Repeatable scenarios** (`repeatable: true`) bypass `firedSet` and can fire every time the trigger matches. Optional `cooldownMs` throttles repeated fires.
+- `firedSet` and cooldown timestamps reset on `session_started`
 - Timer triggers checked every 1s during active session (paused time excluded)
 - Actions execute with optional `delay` (ms) via `setTimeout`
 - Hot-reloadable: scenarios reload on config change or `/api/reload`

@@ -55,7 +55,7 @@ If that doesn't work, connect a screen to the Pi and run:
 ip a
 ```
 
-Look for the `eth0` > `inet` line (e.g. `192.168.1.71`).
+Look for the `eth0` > `inet` line (e.g. `192.168.2.71`).
 
 ---
 
@@ -95,14 +95,14 @@ scp "C:/path/to/file.sh" escape@<ip>:~/
 
 | Pi | Hostname | IP | Role |
 |----|----------|-----|------|
-| H | `room-controller` | 192.168.1.10 | Room Controller (MQTT + Node.js) |
-| A | `cryptex` | 192.168.1.13 | Cryptex prop (touch display + maglock) |
-| B | `props-pi` | 192.168.1.17 | World Map + Puzzles 1/2/5 |
-| C | `villain-pi` | 192.168.1.14 | Villain screen |
-| D | `timferris-pi` | 192.168.1.11 | Tim Ferris + Puzzle 3 |
-| E | `immersion-pi` | 192.168.1.15 | Spy immersion screen |
-| F | `vehicle-pi` | 192.168.1.12 | Vehicle screen + Puzzle 4 |
-| G | `projector-pi` | 192.168.1.16 | Rollable screen / Projector |
+| H | `room-controller` | 192.168.2.10 | Room Controller (MQTT + Node.js) |
+| A | `cryptex` | 192.168.2.13 | Cryptex prop (touch display + maglock) |
+| B | `props-pi` | 192.168.2.17 | World Map + Puzzles 1/2/5 |
+| C | `villain-pi` | 192.168.2.14 | Villain screen |
+| D | `timferris-pi` | 192.168.2.11 | Tim Ferris + Puzzle 3 |
+| E | `immersion-pi` | 192.168.2.15 | Spy immersion screen |
+| F | `vehicle-pi` | 192.168.2.12 | Vehicle screen + Puzzle 4 |
+| G | `projector-pi` | 192.168.2.16 | Rollable screen / Projector |
 
 All use: **user** `escape`, **password** `escape`, **SSH key** from dev PC.
 

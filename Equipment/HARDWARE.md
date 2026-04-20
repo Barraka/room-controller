@@ -110,6 +110,21 @@ The router provides the WiFi network for ESP32 props and wired connections to th
 - TP-Link Archer AX73 (~120 EUR)
 - ASUS RT-AX86U (~200 EUR)
 
+### Hollywood Room — Deployed Configuration
+
+| Setting | Value |
+|---------|-------|
+| **Model** | TP-Link AC1200 |
+| **Admin URL** | http://192.168.2.1 |
+| **Admin password** | Escape37 |
+| **SSID (2.4 GHz)** | Hollywood |
+| **WiFi password** | Escape37 |
+| **Channel** | 1 |
+| **5 GHz** | Disabled |
+| **LAN IP** | 192.168.2.1 |
+| **UPnP** | Disabled |
+| **DHCP Reservations** | Room Controller Pi: `88:a2:9e:a4:55:4d` → `192.168.2.10` |
+
 ### Configuration Tips
 
 1. **Use 2.4 GHz for props**: ESP32 only supports 2.4 GHz. Keep this band dedicated to props.
@@ -119,8 +134,8 @@ The router provides the WiFi network for ESP32 props and wired connections to th
 3. **Disable band steering**: If using dual-band, disable band steering so props stay on 2.4 GHz.
 
 4. **Reserve static IPs**: Configure DHCP reservations for:
-   - Room Controller (e.g., 192.168.1.10)
-   - GM PC (e.g., 192.168.1.20)
+   - Room Controller (e.g., 192.168.2.10)
+   - GM PC (e.g., 192.168.2.20)
    - Each ESP32 prop
 
 5. **Disable power saving**: Some routers have "green" modes that can cause latency.
@@ -251,33 +266,72 @@ Used to switch 5-36V loads (maglocks, electromagnetic locks, solenoids) from a 3
 ### Simple Setup (Recommended)
 
 ```
-Internet ─┬─► [Main Router] ─► to building network
+Internet ─┬─► [SFR Box] ─► building network / internet
           │
-          └─► [Escape Room Router] (isolated network)
+          └─► [TP-Link AC1200 "Hollywood"] (isolated room network)
                     │
-                    ├── Ethernet ──► Room Controller (192.168.1.10)
-                    ├── Ethernet ──► GM PC (192.168.1.20)
+                    ├── Ethernet ──► Room Controller Pi 5 (192.168.2.10)
+                    ├── Ethernet ──► GM PC (192.168.2.20)
                     │
-                    └── WiFi ──► ESP32 Props
-                                  ├── prop-coffre (192.168.1.101)
-                                  ├── prop-roue (192.168.1.102)
-                                  └── prop-miroir (192.168.1.103)
+                    ├── WiFi ──► ESP32 Props (future)
+                    │              ├── roueFortune (192.168.2.193)
+                    │              └── test_magnet (192.168.2.102)
+                    │
+                    └── WiFi ──► Hollywood Pi Props
+                                   ├── Cryptex Pi (192.168.2.207)
+                                   └── Secret HQ Pis (5 units, IPs TBD)
 ```
 
 ### IP Address Scheme
 
-| Device | IP Address |
-|--------|------------|
-| Router | 192.168.1.1 |
-| Room Controller | 192.168.1.10 |
-| GM PC | 192.168.1.20 |
-| Props | 192.168.1.101 - 192.168.1.199 |
+| Device | IP Address | Connection | Status |
+|--------|------------|------------|--------|
+| TP-Link AC1200 Router | 192.168.2.1 | — | ✅ Deployed |
+| Room Controller Pi 5 | 192.168.2.10 | Ethernet | ✅ Deployed |
+| GM PC (Bmax B4) | 192.168.2.20 | Ethernet | ⏳ Pending |
+| Cryptex Pi | 192.168.2.207 | WiFi | ⏳ Needs WiFi switch |
+| roueFortune (ESP32) | 192.168.2.193 | WiFi | ⏳ Needs reflash |
+| test_magnet (ESP32) | 192.168.2.102 | WiFi | ⏳ Needs reflash |
+| Secret HQ Pis (5) | TBD | Ethernet/WiFi | ⏳ Needs network switch |
 
 ### Isolation Considerations
 
 - The escape room network should be **isolated** from the building's main network
 - If internet access is needed (for updates), use a separate VLAN or guest network
 - Props should not have internet access (security)
+- Use a **different subnet** from the building network (e.g., `192.168.2.x` vs `192.168.1.x`) so a dev laptop can be on both networks simultaneously (WiFi for internet, Ethernet for escape room)
+
+### Connecting a Raspberry Pi Prop to WiFi
+
+Step-by-step for adding a Pi-based prop to the Hollywood network:
+
+```bash
+# 1. Connect to WiFi
+sudo nmcli dev wifi connect "Hollywood" password "Escape37"
+
+# 2. Set static IP (replace XXX with the prop's assigned IP)
+sudo nmcli con modify "Hollywood" \
+  ipv4.addresses 192.168.2.XXX/24 \
+  ipv4.gateway 192.168.2.1 \
+  ipv4.dns "192.168.2.1 8.8.8.8" \
+  ipv4.method manual
+
+# 3. CRITICAL: Disable WiFi power management (causes intermittent disconnects)
+sudo nmcli con modify "Hollywood" wifi.powersave 2
+
+# 4. Reconnect to apply changes
+sudo nmcli con down "Hollywood" && sudo nmcli con up "Hollywood"
+
+# 5. Delete old WiFi connections if present
+nmcli con show                          # List all connections
+sudo nmcli con delete "<old-ssid>"      # Delete by name or UUID
+
+# 6. Verify
+ping -c 2 192.168.2.1    # Router
+ping -c 2 192.168.2.10   # Room Controller
+```
+
+> **WiFi power management:** Raspberry Pi OS enables WiFi power saving by default, which causes the radio to sleep and drop connections intermittently. Always disable it with `wifi.powersave 2` for any prop Pi.
 
 ---
 
@@ -314,7 +368,7 @@ sudo systemctl start ssh
 
 **From your dev machine (Windows/Mac/Linux):**
 ```bash
-ssh escape@192.168.1.10
+ssh escape@192.168.2.10
 ```
 
 #### Passwordless SSH (Recommended)
@@ -326,17 +380,17 @@ Set up SSH key authentication to avoid typing the password every time:
 ssh-keygen -t ed25519
 
 # 2. Copy your public key to the Pi
-ssh-copy-id escape@192.168.1.10
+ssh-copy-id escape@192.168.2.10
 # (enter the Pi password one last time)
 
 # 3. Verify passwordless login
-ssh escape@192.168.1.10
+ssh escape@192.168.2.10
 # Should connect without asking for password
 ```
 
 > **Note:** On Windows PowerShell, `ssh-copy-id` is not available. Use this instead:
 > ```powershell
-> Get-Content C:\Users\Manu\.ssh\id_ed25519.pub | ssh escape@192.168.1.10 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+> Get-Content C:\Users\Manu\.ssh\id_ed25519.pub | ssh escape@192.168.2.10 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 > ```
 
 ### VNC (Remote Desktop)
@@ -347,12 +401,12 @@ VNC provides a full graphical desktop view of the Pi. Useful for debugging or wh
 
 **Connecting from Windows:**
 1. Install a VNC viewer (e.g., RealVNC Viewer, TightVNC, or UltraVNC)
-2. Connect to: `192.168.1.10:5900`
+2. Connect to: `192.168.2.10:5900`
 3. Log in with the Pi credentials (same username/password as SSH)
 
 **Connecting from Mac:**
 1. Open Finder > Go > Connect to Server (Cmd+K)
-2. Enter: `vnc://192.168.1.10:5900`
+2. Enter: `vnc://192.168.2.10:5900`
 
 **If VNC is not running (Pi OS Lite or disabled):**
 ```bash
@@ -433,7 +487,16 @@ sudo systemctl start mosquitto
 sudo systemctl status mosquitto
 ```
 
-Default config listens on port 1883 (no authentication). For a local network this is fine.
+**IMPORTANT:** By default Mosquitto only listens on `localhost` (127.0.0.1). Props on other devices (Pi, ESP32) cannot connect unless you allow external connections:
+
+```bash
+# Allow connections from all network devices
+echo -e 'listener 1883 0.0.0.0\nallow_anonymous true' | sudo tee /etc/mosquitto/conf.d/network.conf
+sudo systemctl restart mosquitto
+
+# Verify it's listening on all interfaces (should show 0.0.0.0:1883)
+ss -tlnp | grep 1883
+```
 
 ### Install Room Controller
 
@@ -517,9 +580,9 @@ sudo nano /etc/dhcpcd.conf
 Add at the end:
 ```
 interface eth0
-static ip_address=192.168.1.10/24
-static routers=192.168.1.1
-static domain_name_servers=192.168.1.1 8.8.8.8
+static ip_address=192.168.2.10/24
+static routers=192.168.2.1
+static domain_name_servers=192.168.2.1 8.8.8.8
 ```
 
 **Ubuntu Server (netplan):**
@@ -531,13 +594,13 @@ network:
   ethernets:
     eth0:
       addresses:
-        - 192.168.1.10/24
+        - 192.168.2.10/24
       routes:
         - to: default
-          via: 192.168.1.1
+          via: 192.168.2.1
       nameservers:
         addresses:
-          - 192.168.1.1
+          - 192.168.2.1
           - 8.8.8.8
 ```
 
@@ -562,8 +625,8 @@ curl http://localhost:3002/api/props
 ```
 
 From the GM PC browser:
-- Admin UI: `http://192.168.1.10:3002`
-- Dashboard: `http://192.168.1.10:5173` (if serving built dashboard)
+- Admin UI: `http://192.168.2.10:3002`
+- Dashboard: `http://192.168.2.10:5173` (if serving built dashboard)
 
 ### Serving the GM Dashboard (Production)
 
@@ -575,7 +638,7 @@ cd escapeRoomManager
 npm run build
 
 # Copy dist folder to Room Controller
-scp -r dist/* escape@192.168.1.10:/opt/room-controller/public/
+scp -r dist/* escape@192.168.2.10:/opt/room-controller/public/
 ```
 
 Or install a simple static server on the Room Controller:
@@ -596,8 +659,8 @@ Add this as another systemd service if needed.
 - [ ] Router configured with static IPs
 - [ ] WiFi SSID/password set (2.4 GHz, fixed channel)
 - [ ] All ESP32 props connect to WiFi
-- [ ] GM PC can access Dashboard (http://192.168.1.10:5173)
-- [ ] GM PC can access Admin UI (http://192.168.1.10:3002)
+- [ ] GM PC can access Dashboard (http://192.168.2.10:5173)
+- [ ] GM PC can access Admin UI (http://192.168.2.10:3002)
 - [ ] Props appear online in Admin UI
 - [ ] SSH access works from dev machine (preferably passwordless)
 - [ ] VNC access works from dev machine (optional)

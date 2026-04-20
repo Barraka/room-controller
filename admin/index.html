@@ -946,6 +946,17 @@
             <option value="false">Non</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Repetable</label>
+          <select id="scenarioRepeatable" onchange="onRepeatableChange()">
+            <option value="false">Non</option>
+            <option value="true">Oui</option>
+          </select>
+        </div>
+        <div class="form-group" id="scenarioCooldownGroup" style="display:none;">
+          <label>Cooldown (ms)</label>
+          <input type="number" id="scenarioCooldownMs" min="0" value="0" placeholder="0 = pas de cooldown">
+        </div>
 
         <h4 style="color: #00d4ff; margin: 16px 0 8px; font-size: 13px;">DECLENCHEUR</h4>
         <div class="form-group">
@@ -2227,6 +2238,9 @@
         const enabledBadge = sc.enabled
           ? '<span class="status-badge" style="font-size:11px;">Actif</span>'
           : '<span class="status-badge offline" style="font-size:11px;">Inactif</span>';
+        const repeatableBadge = sc.repeatable
+          ? `<span class="status-badge" style="font-size:11px;background:#5c3d1e;color:#fbbf24;">Repetable${sc.cooldownMs ? ' (' + sc.cooldownMs + 'ms)' : ''}</span>`
+          : '';
 
         return `
           <div class="card">
@@ -2234,6 +2248,7 @@
               <div>
                 <span class="card-title">${sc.name}</span>
                 ${enabledBadge}
+                ${repeatableBadge}
               </div>
             </div>
             <div style="font-size:12px;color:#aaa;margin-bottom:4px;">
@@ -2313,6 +2328,11 @@
       document.getElementById('triggerPropGroup').style.display = ['prop_solved', 'sensor_triggered'].includes(type) ? '' : 'none';
       document.getElementById('triggerSensorGroup').style.display = type === 'sensor_triggered' ? '' : 'none';
       document.getElementById('triggerTimerGroup').style.display = type === 'timer' ? '' : 'none';
+    }
+
+    function onRepeatableChange() {
+      const repeatable = document.getElementById('scenarioRepeatable').value === 'true';
+      document.getElementById('scenarioCooldownGroup').style.display = repeatable ? '' : 'none';
     }
 
     let scenarioActions = [];
@@ -2401,6 +2421,9 @@
       document.getElementById('scenarioTriggerType').value = 'prop_solved';
       document.getElementById('scenarioTriggerMinutes').value = '0';
       document.getElementById('scenarioTriggerSeconds').value = '0';
+      document.getElementById('scenarioRepeatable').value = 'false';
+      document.getElementById('scenarioCooldownMs').value = '0';
+      onRepeatableChange();
       populateScenarioPropDropdown();
       onTriggerTypeChange();
       scenarioActions = [];
@@ -2418,6 +2441,9 @@
       document.getElementById('scenarioId').value = sc.id;
       document.getElementById('scenarioName').value = sc.name;
       document.getElementById('scenarioEnabled').value = sc.enabled ? 'true' : 'false';
+      document.getElementById('scenarioRepeatable').value = sc.repeatable ? 'true' : 'false';
+      document.getElementById('scenarioCooldownMs').value = sc.cooldownMs || 0;
+      onRepeatableChange();
       document.getElementById('scenarioTriggerType').value = sc.trigger?.type || 'prop_solved';
 
       populateScenarioPropDropdown(sc.trigger?.propId || '');
@@ -2498,9 +2524,14 @@
         }
       }
 
+      const repeatable = document.getElementById('scenarioRepeatable').value === 'true';
+      const cooldownMs = repeatable ? (parseInt(document.getElementById('scenarioCooldownMs').value) || 0) : 0;
+
       const scenarioData = {
         name: scenarioName,
         enabled: document.getElementById('scenarioEnabled').value === 'true',
+        repeatable,
+        cooldownMs,
         trigger,
         actions: scenarioActions
       };

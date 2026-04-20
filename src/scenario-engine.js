@@ -7,6 +7,7 @@
 export function createScenarioEngine(config, stateManager, mqttClient, wsServer) {
   let scenarios = config.scenarios || [];
   const firedSet = new Set(); // Track fired scenario IDs per session
+  const lastFiredMap = new Map(); // Track last fire timestamp for repeatable cooldowns
   let timerInterval = null;
   const pendingTimeouts = []; // Track delayed action timeouts for cancellation
 
@@ -42,7 +43,16 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
   function evaluateTriggers(eventType, data) {
     for (const scenario of scenarios) {
       if (!scenario.enabled) continue;
-      if (firedSet.has(scenario.id)) continue;
+
+      if (scenario.repeatable) {
+        // Repeatable scenarios: check cooldown instead of firedSet
+        if (scenario.cooldownMs > 0) {
+          const lastFired = lastFiredMap.get(scenario.id);
+          if (lastFired && (Date.now() - lastFired) < scenario.cooldownMs) continue;
+        }
+      } else {
+        if (firedSet.has(scenario.id)) continue;
+      }
 
       const trigger = scenario.trigger;
       if (!trigger || trigger.type !== eventType) continue;
@@ -62,8 +72,12 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
       }
 
       if (match) {
-        firedSet.add(scenario.id);
-        console.log(`[Scenario] Triggered: "${scenario.name}" (${scenario.id})`);
+        if (scenario.repeatable) {
+          lastFiredMap.set(scenario.id, Date.now());
+        } else {
+          firedSet.add(scenario.id);
+        }
+        console.log(`[Scenario] Triggered: "${scenario.name}" (${scenario.id})${scenario.repeatable ? ' [repeatable]' : ''}`);
         executeActions(scenario.actions);
       }
     }
@@ -92,12 +106,24 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
 
       for (const scenario of scenarios) {
         if (!scenario.enabled) continue;
-        if (firedSet.has(scenario.id)) continue;
         if (scenario.trigger?.type !== 'timer') continue;
 
+        if (scenario.repeatable) {
+          if (scenario.cooldownMs > 0) {
+            const lastFired = lastFiredMap.get(scenario.id);
+            if (lastFired && (Date.now() - lastFired) < scenario.cooldownMs) continue;
+          }
+        } else {
+          if (firedSet.has(scenario.id)) continue;
+        }
+
         if (elapsedMs >= scenario.trigger.atElapsedMs) {
-          firedSet.add(scenario.id);
-          console.log(`[Scenario] Timer triggered: "${scenario.name}" at ${Math.round(elapsedMs / 1000)}s`);
+          if (scenario.repeatable) {
+            lastFiredMap.set(scenario.id, Date.now());
+          } else {
+            firedSet.add(scenario.id);
+          }
+          console.log(`[Scenario] Timer triggered: "${scenario.name}" at ${Math.round(elapsedMs / 1000)}s${scenario.repeatable ? ' [repeatable]' : ''}`);
           executeActions(scenario.actions);
         }
       }
@@ -177,6 +203,7 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
 
   function resetFired() {
     firedSet.clear();
+    lastFiredMap.clear();
   }
 
   function reloadScenarios(newScenarios) {
@@ -187,6 +214,33 @@ export function createScenarioEngine(config, stateManager, mqttClient, wsServer)
   console.log(`[Scenario] Engine initialized with ${scenarios.length} scenarios`);
 
   return {
-    reloadScenarios
+    reloadScenarios,
+
+    getCheckpointData() {
+      return {
+        firedIds: [...firedSet],
+        lastFiredMap: Object.fromEntries(lastFiredMap)
+      };
+    },
+
+    restoreState(firedIds, lastFiredEntries) {
+      firedSet.clear();
+      for (const id of firedIds) {
+        firedSet.add(id);
+      }
+
+      lastFiredMap.clear();
+      for (const [id, ts] of Object.entries(lastFiredEntries)) {
+        lastFiredMap.set(id, ts);
+      }
+
+      // Start timer checks if session is active
+      const session = stateManager.getSession();
+      if (session.active) {
+        startTimerChecks();
+      }
+
+      console.log(`[Scenario] Restored state: ${firedSet.size} fired, ${lastFiredMap.size} cooldowns`);
+    }
   };
 }

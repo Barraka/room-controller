@@ -32,6 +32,19 @@
       "type": "accelerometer",
       "order": 3,
       "sensors": [{ "sensorId": "shake", "label": "Secousse" }]
+    },
+    {
+      "propId": "hollywood_cocktail",
+      "name": "Cocktail Machine",
+      "type": "button",
+      "order": 4,
+      "sensors": [
+        { "sensorId": "btn1", "label": "Bouton 1" },
+        { "sensorId": "btn2", "label": "Bouton 2" },
+        { "sensorId": "btn3", "label": "Bouton 3" },
+        { "sensorId": "btn4", "label": "Bouton 4" },
+        { "sensorId": "btn5", "label": "Bouton 5" }
+      ]
     }
   ],
   "pieces": [],

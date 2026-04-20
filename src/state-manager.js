@@ -324,6 +324,7 @@ export function createStateManager(config, configPath) {
 
       session.pausedAt = Date.now();
       console.log('[State] Session paused');
+      emit('session_paused', { timestamp: session.pausedAt });
       return { success: true, session: this.getSession() };
     },
 
@@ -335,10 +336,12 @@ export function createStateManager(config, configPath) {
         return { success: false, error: 'Session not paused' };
       }
 
-      const pauseDuration = Date.now() - session.pausedAt;
+      const now = Date.now();
+      const pauseDuration = now - session.pausedAt;
       session.totalPausedMs += pauseDuration;
       session.pausedAt = null;
       console.log(`[State] Session resumed (paused for ${pauseDuration}ms)`);
+      emit('session_resumed', { timestamp: now });
       return { success: true, session: this.getSession() };
     },
 
@@ -463,6 +466,67 @@ export function createStateManager(config, configPath) {
       session.hintsGiven++;
       console.log(`[State] Hint given (total: ${session.hintsGiven})`);
       return { success: true, session: this.getSession() };
+    },
+
+    // ─────────────────────────────────────────────────────────
+    // Session checkpoint (for crash recovery)
+    // ─────────────────────────────────────────────────────────
+
+    getSessionCheckpoint() {
+      return {
+        session: {
+          active: session.active,
+          startedAt: session.startedAt,
+          pausedAt: session.pausedAt,
+          totalPausedMs: session.totalPausedMs,
+          hintsGiven: session.hintsGiven
+        },
+        props: Array.from(props.values()).map(p => ({
+          propId: p.propId,
+          solved: p.solved,
+          override: p.override,
+          startedAt: p.startedAt,
+          solvedAt: p.solvedAt,
+          sensors: p.sensors.map(s => ({
+            sensorId: s.sensorId,
+            triggered: s.triggered
+          }))
+        }))
+      };
+    },
+
+    restoreSession(checkpoint) {
+      // Restore session state
+      session.active = checkpoint.session.active;
+      session.startedAt = checkpoint.session.startedAt;
+      session.pausedAt = checkpoint.session.pausedAt;
+      session.totalPausedMs = checkpoint.session.totalPausedMs;
+      session.hintsGiven = checkpoint.session.hintsGiven;
+      session.endedAt = null;
+
+      // Restore prop runtime state
+      for (const cpProp of checkpoint.props) {
+        const prop = props.get(cpProp.propId);
+        if (!prop) {
+          console.warn(`[Recovery] Skipping unknown prop: ${cpProp.propId}`);
+          continue;
+        }
+
+        prop.solved = cpProp.solved;
+        prop.override = cpProp.override;
+        prop.startedAt = cpProp.startedAt;
+        prop.solvedAt = cpProp.solvedAt;
+
+        // Restore sensor states
+        for (const cpSensor of cpProp.sensors) {
+          const sensor = prop.sensors.find(s => s.sensorId === cpSensor.sensorId);
+          if (sensor) {
+            sensor.triggered = cpSensor.triggered;
+          }
+        }
+
+        console.log(`[Recovery] Restored prop ${cpProp.propId}: solved=${cpProp.solved}, sensors=${cpProp.sensors.filter(s => s.triggered).length}/${cpProp.sensors.length} triggered`);
+      }
     },
 
     // ─────────────────────────────────────────────────────────

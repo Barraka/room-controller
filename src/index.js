@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createMqttClient } from './mqtt-client.js';
@@ -41,6 +41,92 @@ const adminServer = createAdminServer(adminPort, stateManager, scenarioEngine);
 
 // Wire up WebSocket server to Admin server (for config reload broadcasts)
 adminServer.setWsServer(wsServer);
+
+// ─────────────────────────────────────────────────────────
+// Session checkpoint (crash recovery)
+// ─────────────────────────────────────────────────────────
+
+const CHECKPOINT_FILE = join(__dirname, '..', 'session-checkpoint.json');
+let checkpointInterval = null;
+
+function writeCheckpoint() {
+  try {
+    const data = {
+      timestamp: Date.now(),
+      ...stateManager.getSessionCheckpoint(),
+      ...scenarioEngine.getCheckpointData()
+    };
+    writeFileSync(CHECKPOINT_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error('[Checkpoint] Failed to write:', err.message);
+  }
+}
+
+function deleteCheckpoint() {
+  try {
+    if (existsSync(CHECKPOINT_FILE)) {
+      unlinkSync(CHECKPOINT_FILE);
+    }
+  } catch (err) {
+    console.error('[Checkpoint] Failed to delete:', err.message);
+  }
+}
+
+function loadCheckpoint() {
+  try {
+    if (!existsSync(CHECKPOINT_FILE)) return null;
+    return JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8'));
+  } catch (err) {
+    console.warn('[Checkpoint] Corrupt checkpoint file, deleting:', err.message);
+    deleteCheckpoint();
+    return null;
+  }
+}
+
+function startCheckpointInterval() {
+  stopCheckpointInterval();
+  checkpointInterval = setInterval(writeCheckpoint, 10_000);
+}
+
+function stopCheckpointInterval() {
+  if (checkpointInterval) {
+    clearInterval(checkpointInterval);
+    checkpointInterval = null;
+  }
+}
+
+// Restore session from checkpoint (if any)
+const checkpoint = loadCheckpoint();
+if (checkpoint && checkpoint.session?.active) {
+  stateManager.restoreSession(checkpoint);
+  scenarioEngine.restoreState(
+    checkpoint.firedIds || [],
+    checkpoint.lastFiredMap || {}
+  );
+  startCheckpointInterval();
+  console.log(`[Recovery] Session restored from checkpoint (started at ${new Date(checkpoint.session.startedAt).toLocaleTimeString()})`);
+} else if (checkpoint) {
+  // Stale checkpoint (session not active) — clean up
+  deleteCheckpoint();
+}
+
+// Subscribe to state events for checkpoint triggers
+stateManager.onEvent((event) => {
+  switch (event) {
+    case 'session_started':
+      writeCheckpoint();
+      startCheckpointInterval();
+      break;
+    case 'session_paused':
+    case 'session_resumed':
+      writeCheckpoint();
+      break;
+    case 'session_ended':
+      stopCheckpointInterval();
+      deleteCheckpoint();
+      break;
+  }
+});
 
 // Graceful shutdown
 const shutdown = () => {
