@@ -257,7 +257,12 @@ npm start            # Production start
 
 ## Recent Changes
 
-### Admin UI Improvements (Latest)
+### Shake Progress Forwarding (Latest)
+- **`state-manager.js`**: Extracts `shakeProgress` (0-100) from MQTT `details` object and includes it in WebSocket `prop_update` changes
+- **Reset**: `shakeProgress` resets to 0 when prop is reset via `resetProp()`
+- **Dashboard**: Uses this to display a circular progress indicator on the Shaker PropCard
+
+### Admin UI Improvements
 - **Audio tab**: Removed role dropdown for music tracks (roles only apply to effects), added track duration display next to play button
 - **Role badges**: Now display French labels ("Victoire" / "Défaite") instead of raw values
 - **Toast notifications**: Moved from bottom-right to top-center with shadow for better visibility
