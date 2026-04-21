@@ -199,6 +199,15 @@ export function createStateManager(config, configPath) {
         }
       }
 
+      // Update shake progress from details
+      if (mqttStatus.details?.shakeProgress !== undefined) {
+        const progress = mqttStatus.details.shakeProgress;
+        if (progress !== prop.shakeProgress) {
+          prop.shakeProgress = progress;
+          changes.shakeProgress = progress;
+        }
+      }
+
       if (Object.keys(changes).length > 0) {
         console.log(`[State] Prop ${propId} updated:`, changes);
         return { propId, changes };
@@ -241,6 +250,12 @@ export function createStateManager(config, configPath) {
       changes.solvedAt = null;
       changes.override = false;
       changes.startedAt = null;
+
+      // Reset shake progress
+      if (prop.shakeProgress !== undefined) {
+        prop.shakeProgress = 0;
+        changes.shakeProgress = 0;
+      }
 
       // Reset sensors
       if (prop.sensors.length > 0) {
