@@ -54,6 +54,17 @@ export function createWebSocketServer(config, stateManager) {
       payload: stateManager.getFullState()
     });
 
+    // Send current projector states (for any prop with a projector state machine)
+    if (mqttClient?.getProjectorStates) {
+      for (const snap of mqttClient.getProjectorStates()) {
+        send(ws, {
+          type: 'screen_reveal_state',
+          timestamp: Date.now(),
+          payload: snap
+        });
+      }
+    }
+
     ws.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());

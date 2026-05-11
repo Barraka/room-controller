@@ -45,6 +45,39 @@
         { "sensorId": "btn4", "label": "Bouton 4" },
         { "sensorId": "btn5", "label": "Bouton 5" }
       ]
+    },
+    {
+      "propId": "hollywood_screen_reveal",
+      "name": "Screen Reveal",
+      "type": "keypad",
+      "order": 5,
+      "sensors": [],
+      "codeValidator": {
+        "expected": "746281",
+        "triggeredBy": "hollywood_oscars"
+      },
+      "hqAudioTrigger": {
+        "event": "motion_detected",
+        "file": "01 - Bonjour Agent Tim.mp3",
+        "requireSolved": true,
+        "postSolveLockoutMs": 5000,
+        "oneShotPerSession": true
+      }
+    },
+    {
+      "propId": "hollywood_etoile_timferris",
+      "name": "Étoile Tim Ferris",
+      "type": "magnet",
+      "order": 6,
+      "sensors": [
+        { "sensorId": "magnet1", "label": "Aimant 1" },
+        { "sensorId": "magnet2", "label": "Aimant 2" },
+        { "sensorId": "magnet3", "label": "Aimant 3" },
+        { "sensorId": "magnet4", "label": "Aimant 4" },
+        { "sensorId": "magnet5", "label": "Aimant 5" },
+        { "sensorId": "magnet6", "label": "Aimant 6" },
+        { "sensorId": "magnet7", "label": "Aimant 7" }
+      ]
     }
   ],
   "pieces": [],

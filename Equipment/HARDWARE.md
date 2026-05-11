@@ -206,8 +206,38 @@ Used to switch 5-36V loads (maglocks, electromagnetic locks, solenoids) from a 3
 > **Note:** The HW-548 is a P-channel MOSFET — it triggers **active-low** (LOW = output ON). Set `activeLow = true` in the prop config.
 
 **Alternative: XY-MOS (N-channel)**
-- Screw terminals for VIN/OUT only; signal pins (GND, TRIG) are bare through-holes requiring soldering or pin headers
+- Screw terminals for VIN/OUT only; signal pins (GND, TRIG/PWM) are bare through-holes requiring soldering or pin headers
+- **No VCC pin** — only GND and TRIG are needed on the input side. The trigger is a logic-level signal referenced to GND; gate drive comes from VIN+ internally
 - Triggers **active-high** (HIGH = output ON). Set `activeLow = false` in the prop config.
+
+### Grounding Methodology (12V load + 3.3V logic)
+
+When using any low-side MOSFET module (XY-MOS, etc.) to drive a 12V load from a 3.3V ESP32 GPIO, the ESP32 logic ground and the 12V PSU return must share a common reference. Otherwise the MOSFET trigger threshold floats and switching is unreliable.
+
+On the **XY-MOS specifically**, the bottom **GND pad** is internally connected to **VIN-** on the PCB (both go to the MOSFET source). This means the simplest correct wiring is:
+
+```
+12V PSU (+) ──→ VIN+
+12V PSU (–) ──→ VIN-                            ◄── 12V return path (high current)
+                  ↕ (internal PCB trace)
+ESP32 GND   ──→ GND pad   ◄── soldered logic-ground wire (signal current only)
+ESP32 GPIO  ──→ TRIG/PWM
+```
+
+A single soldered wire from ESP32 GND to the XY-MOS GND pad is **sufficient** — no Wago, no junction box. The shared reference happens via the module's internal copper trace. The high-current return continues to flow through VIN-, not through the GND pad's thin trace.
+
+**Verification (multimeter, no power applied):**
+- ESP32 GND ↔ VIN- → should beep (continuity, confirms the solder joint and internal trace)
+- VIN+ ↔ OUT+ → should beep (always connected internally)
+- OUT- ↔ VIN- with TRIG floating → should NOT beep (MOSFET off when ungated)
+
+**Avoid:**
+- Tying OUT- anywhere except to the load (shorting OUT- to VIN- bypasses the MOSFET — the load would be permanently energized and the GPIO trigger would do nothing)
+- Connecting 3.3V to the XY-MOS (no VCC pin exists; the trigger is just signal vs. GND)
+- Two isolated grounds (e.g. ESP32 powered from USB without any GND wire to the 12V side) — logic levels float, MOSFET switches erratically or not at all
+- Using the GND pad as the high-current return (the pad's internal trace is thin; always run 12V return through the VIN- screw terminal)
+
+**For multiple maglocks releasing together:** wire them in parallel on a single XY-MOS OUT+/OUT- (one GPIO, one MOSFET). IRF520's 9A rating handles ~2A combined easily. A single 1N4007 (or 1N5408 for margin) across OUT+/OUT- protects all coils since they share the same node.
 
 ### Enclosure
 
@@ -279,6 +309,7 @@ Internet ─┬─► [SFR Box] ─► building network / internet
                     │
                     └── WiFi ──► Hollywood Pi Props
                                    ├── Cryptex Pi (192.168.2.207)
+                                   ├── Projector Pi (192.168.2.104)
                                    └── Secret HQ Pis (5 units, IPs TBD)
 ```
 
@@ -289,10 +320,13 @@ Internet ─┬─► [SFR Box] ─► building network / internet
 | TP-Link AC1200 Router | 192.168.2.1 | — | ✅ Deployed |
 | Room Controller Pi 5 | 192.168.2.10 | Ethernet | ✅ Deployed |
 | GM PC (Bmax B4) | 192.168.2.20 | Ethernet | ⏳ Pending |
+| Projector Pi (Pi 3B/3B+) | 192.168.2.104 | Ethernet/WiFi | ⏳ Pending |
 | Cryptex Pi | 192.168.2.207 | WiFi | ⏳ Needs WiFi switch |
 | roueFortune (ESP32) | 192.168.2.193 | WiFi | ⏳ Needs reflash |
 | test_magnet (ESP32) | 192.168.2.102 | WiFi | ⏳ Needs reflash |
 | Secret HQ Pis (5) | TBD | Ethernet/WiFi | ⏳ Needs network switch |
+
+**Projector Pi**: drives the Mission Hollywood projector via HDMI. Chromium kiosk loads the Screen Reveal puzzle UI from local files (`~/projector/index.html`), receives state over WebSocket from RC. Setup: see `01 - Hollywood Props/Projector/SETUP.md`.
 
 ### Isolation Considerations
 
