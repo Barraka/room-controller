@@ -176,6 +176,20 @@ export function createWebSocketServer(config, stateManager) {
         }
         break;
 
+      case 'play_clip':
+        // Screens (e.g. screen-right) connect as WS clients and listen for a
+        // `cmd` message addressed to their propId — they are NOT MQTT props, so
+        // there's nothing to route through stateManager/MQTT. Just broadcast the
+        // cmd: the target screen plays the clip, every other client ignores it
+        // (dashboards have no 'cmd' handler; screens filter by propId).
+        broadcast({
+          type: 'cmd',
+          timestamp: Date.now(),
+          payload: { command: 'play_clip', propId, clip: payload.clip }
+        });
+        result = { success: true };
+        break;
+
       default:
         result = { success: false, error: `Unknown command: ${command}` };
     }
