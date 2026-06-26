@@ -208,6 +208,15 @@ export function createStateManager(config, configPath) {
         }
       }
 
+      // Update cryptex column values from details (live numbers + colors)
+      if (mqttStatus.details?.columns !== undefined) {
+        const columns = mqttStatus.details.columns;
+        if (JSON.stringify(columns) !== JSON.stringify(prop.columns)) {
+          prop.columns = columns;
+          changes.columns = columns;
+        }
+      }
+
       if (Object.keys(changes).length > 0) {
         console.log(`[State] Prop ${propId} updated:`, changes);
         return { propId, changes };
