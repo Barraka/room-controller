@@ -211,19 +211,19 @@
       "sensors": [
         {
           "sensorId": "rfid1",
-          "label": "rfid1"
+          "label": "Pot Crème"
         },
         {
           "sensorId": "rfid2",
-          "label": "rfid2"
+          "label": "Palette"
         },
         {
           "sensorId": "rfid3",
-          "label": "rfid3"
+          "label": "Boîte Bijoux"
         },
         {
           "sensorId": "rfid4",
-          "label": "rfid4"
+          "label": "Perruque"
         }
       ]
     },
