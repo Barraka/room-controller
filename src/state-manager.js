@@ -6,6 +6,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const HISTORY_FILE = join(__dirname, '..', 'session-history.json');
 
 /**
+ * GM clue text shown on a prop card. Uses an explicit `hint` if set, otherwise
+ * auto-derives it from a code-validated prop's expected code (e.g. "746281" ->
+ * "7 - 4 - 6 - 2 - 8 - 1") so the GM always sees the real code.
+ */
+function deriveHint(propConfig) {
+  if (propConfig.hint) return propConfig.hint;
+  const code = propConfig.codeValidator?.expected;
+  return code ? String(code).split('').join(' - ') : null;
+}
+
+/**
  * Creates a state manager for room, props, and sessions
  */
 export function createStateManager(config, configPath) {
@@ -28,7 +39,7 @@ export function createStateManager(config, configPath) {
       order: propConfig.order,
       pieceId: propConfig.pieceId || null,
       type: propConfig.type || null,
-      hint: propConfig.hint || null,  // optional GM clue text shown on the card
+      hint: deriveHint(propConfig),  // optional GM clue text shown on the card
       online: false,
       solved: false,
       override: false,
@@ -661,7 +672,7 @@ export function createStateManager(config, configPath) {
           existing.order = propConfig.order;
           existing.pieceId = propConfig.pieceId || null;
           existing.type = propConfig.type || null;
-          existing.hint = propConfig.hint || null;
+          existing.hint = deriveHint(propConfig);
 
           // Update sensors: preserve triggered state for existing sensors
           const existingSensors = new Map(existing.sensors.map(s => [s.sensorId, s]));
@@ -683,7 +694,7 @@ export function createStateManager(config, configPath) {
             order: propConfig.order,
             pieceId: propConfig.pieceId || null,
             type: propConfig.type || null,
-            hint: propConfig.hint || null,
+            hint: deriveHint(propConfig),
             online: false,
             solved: false,
             override: false,
