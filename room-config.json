@@ -265,19 +265,19 @@
       "sensors": [
         {
           "sensorId": "rfid1",
-          "label": "rfid1"
+          "label": "2000 Meilleure Musique"
         },
         {
           "sensorId": "rfid2",
-          "label": "rfid2"
+          "label": "2001 Meilleur Decor"
         },
         {
           "sensorId": "rfid3",
-          "label": "rfid3"
+          "label": "2003 Meilleur Maquillage"
         },
         {
           "sensorId": "rfid4",
-          "label": "rfid4"
+          "label": "1979 Meilleur Costume"
         }
       ]
     },
@@ -303,7 +303,10 @@
     {
       "id": "bobine-start-on-oscars",
       "name": "Démarrer la séquence de la bobine quand Oscars est résolu",
-      "trigger": { "type": "prop_solved", "propId": "hollywood_oscars" },
+      "trigger": {
+        "type": "prop_solved",
+        "propId": "hollywood_oscars"
+      },
       "actions": [
         {
           "type": "mqtt_cmd",
@@ -316,7 +319,10 @@
     {
       "id": "bobine-reveal-on-screen-reveal",
       "name": "Révéler tous les chiffres quand le code correct est saisi",
-      "trigger": { "type": "prop_solved", "propId": "hollywood_screen_reveal" },
+      "trigger": {
+        "type": "prop_solved",
+        "propId": "hollywood_screen_reveal"
+      },
       "actions": [
         {
           "type": "mqtt_cmd",
