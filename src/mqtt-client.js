@@ -22,6 +22,11 @@ export function createMqttClient(config, stateManager, wsServer) {
   // compare. On match, we force_solve (which signals the ESP32 to send RF UP).
   const codeBuffers = new Map();
 
+  // GM-visibility rolling window of the last N digits pressed on a code prop,
+  // shown live on the dashboard card. Independent of `codeBuffers` (which clears
+  // on each attempt) — this keeps showing the last digits the player typed.
+  const recentKeys = new Map();
+
   // Independent sliding-window buffers for `codeValidator.resetCode`. Lets a GM
   // roll a screen back down via the IR remote (e.g. "12121212") without using
   // the dashboard. Runs in parallel to the strict expected-code logic.
@@ -55,6 +60,15 @@ export function createMqttClient(config, stateManager, wsServer) {
     broadcastProjectorState(propId, state, buffer);
   }
 
+  // Push the rolling "last keys pressed" window onto the prop card.
+  function broadcastKeysPressed(propId, keys) {
+    wsServer.broadcast({
+      type: 'prop_update',
+      timestamp: Date.now(),
+      payload: { propId, changes: { keysPressed: keys } }
+    });
+  }
+
   function clearWrongCodeTimer(propId) {
     const t = wrongCodeTimers.get(propId);
     if (t) {
@@ -84,6 +98,8 @@ export function createMqttClient(config, stateManager, wsServer) {
         if (p.codeValidator?.triggeredBy === data.propId) {
           codeBuffers.set(p.propId, '');
           clearWrongCodeTimer(p.propId);
+          recentKeys.delete(p.propId);
+          broadcastKeysPressed(p.propId, '');
           setProjectorState(p.propId, 'code_entry', '');
           console.log(`[Projector] ${p.propId}: code_entry (triggered by ${data.propId})`);
         }
@@ -96,6 +112,8 @@ export function createMqttClient(config, stateManager, wsServer) {
     } else if (event === 'session_started' || event === 'session_ended') {
       for (const propId of projectorStates.keys()) {
         resetProjectorToIdle(propId);
+        recentKeys.delete(propId);
+        broadcastKeysPressed(propId, '');
       }
       resetBuffers.clear();
       hqAudioSolvedAt.clear();
@@ -286,6 +304,8 @@ export function createMqttClient(config, stateManager, wsServer) {
       if (had) console.log(`[CodeValidator] ${propId}: buffer cleared`);
       codeBuffers.set(propId, '');
       resetBuffers.set(propId, '');
+      recentKeys.delete(propId);
+      broadcastKeysPressed(propId, '');
       clearWrongCodeTimer(propId);
       if (usesProjector && projectorStates.get(propId) !== 'idle') {
         setProjectorState(propId, 'code_entry', '');
@@ -296,6 +316,15 @@ export function createMqttClient(config, stateManager, wsServer) {
     if (payload.action !== 'keypress') return;
     const digit = payload.digit;
     if (typeof digit !== 'string' || digit.length === 0) return;
+
+    // GM visibility: keep a rolling window of the last `expected.length` digits
+    // pressed and push it to the prop card (captures every press, regardless of
+    // the validation/projector state).
+    if (/^[0-9]$/.test(digit)) {
+      const recent = ((recentKeys.get(propId) || '') + digit).slice(-expected.length);
+      recentKeys.set(propId, recent);
+      broadcastKeysPressed(propId, recent);
+    }
 
     // Sliding-window match for resetCode. Runs regardless of projector state so
     // the GM can always roll the screen back down via the IR remote.
