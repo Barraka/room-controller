@@ -66,19 +66,19 @@
         },
         {
           "sensorId": "fake1",
-          "label": "Bouton décoratif 1"
+          "label": "Bloody Mary"
         },
         {
           "sensorId": "fake2",
-          "label": "Bouton décoratif 2"
+          "label": "Sex On The Beach"
         },
         {
           "sensorId": "fake3",
-          "label": "Bouton décoratif 3"
+          "label": "Piña Colada"
         },
         {
           "sensorId": "fake4",
-          "label": "Bouton décoratif 4"
+          "label": "Margarita"
         }
       ]
     },
