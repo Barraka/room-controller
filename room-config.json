@@ -153,23 +153,23 @@
       "sensors": [
         {
           "sensorId": "star1",
-          "label": "star1"
+          "label": "Spielberg"
         },
         {
           "sensorId": "star2",
-          "label": "star2"
+          "label": "Simpsons"
         },
         {
           "sensorId": "star3",
-          "label": "star3"
+          "label": "Dion"
         },
         {
           "sensorId": "star4",
-          "label": "star4"
+          "label": "Armstrong"
         },
         {
           "sensorId": "star5",
-          "label": "star5"
+          "label": "Ali"
         }
       ]
     },
@@ -236,23 +236,23 @@
       "sensors": [
         {
           "sensorId": "rfid1",
-          "label": "rfid1"
+          "label": "Vert"
         },
         {
           "sensorId": "rfid2",
-          "label": "rfid2"
+          "label": "Bleu"
         },
         {
           "sensorId": "rfid3",
-          "label": "rfid3"
+          "label": "Noir"
         },
         {
           "sensorId": "rfid4",
-          "label": "rfid4"
+          "label": "Blanc"
         },
         {
           "sensorId": "rfid5",
-          "label": "rfid5"
+          "label": "Rouge"
         }
       ]
     },
