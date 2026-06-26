@@ -217,6 +217,14 @@ export function createStateManager(config, configPath) {
         }
       }
 
+      // Update cryptex correct-code reminder from details
+      if (mqttStatus.details?.code !== undefined && mqttStatus.details.code !== null) {
+        if (mqttStatus.details.code !== prop.code) {
+          prop.code = mqttStatus.details.code;
+          changes.code = mqttStatus.details.code;
+        }
+      }
+
       if (Object.keys(changes).length > 0) {
         console.log(`[State] Prop ${propId} updated:`, changes);
         return { propId, changes };
