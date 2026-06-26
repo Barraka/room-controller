@@ -80,7 +80,8 @@
           "sensorId": "fake4",
           "label": "Margarita"
         }
-      ]
+      ],
+      "hint": "Old - Cosmo - Blue - Martini - Mojito"
     },
     {
       "propId": "hollywood_screen_reveal",

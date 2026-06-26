@@ -28,6 +28,7 @@ export function createStateManager(config, configPath) {
       order: propConfig.order,
       pieceId: propConfig.pieceId || null,
       type: propConfig.type || null,
+      hint: propConfig.hint || null,  // optional GM clue text shown on the card
       online: false,
       solved: false,
       override: false,
@@ -660,6 +661,7 @@ export function createStateManager(config, configPath) {
           existing.order = propConfig.order;
           existing.pieceId = propConfig.pieceId || null;
           existing.type = propConfig.type || null;
+          existing.hint = propConfig.hint || null;
 
           // Update sensors: preserve triggered state for existing sensors
           const existingSensors = new Map(existing.sensors.map(s => [s.sensorId, s]));
@@ -681,6 +683,7 @@ export function createStateManager(config, configPath) {
             order: propConfig.order,
             pieceId: propConfig.pieceId || null,
             type: propConfig.type || null,
+            hint: propConfig.hint || null,
             online: false,
             solved: false,
             override: false,
