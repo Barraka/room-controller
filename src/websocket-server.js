@@ -190,6 +190,13 @@ export function createWebSocketServer(config, stateManager) {
         result = { success: true };
         break;
 
+      case 'open':
+        // Release a prop's output(s) directly (e.g. the gadgets trapdoor
+        // maglock) without marking the prop solved — decoupled from the puzzle.
+        if (mqttClient) mqttClient.sendCommand(propId, 'open');
+        result = { success: true };
+        break;
+
       default:
         result = { success: false, error: `Unknown command: ${command}` };
     }
